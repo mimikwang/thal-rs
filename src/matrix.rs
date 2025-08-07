@@ -17,21 +17,15 @@ impl Matrix {
     }
 
     /// Get element at row and col
-    pub fn get(&self, row: usize, col: usize) -> Result<Thermo, &str> {
-        let thermo = self
-            .values
-            .get(self.ind(col, row))
-            .ok_or("out of bounds")?;
+    pub fn get(&self, row: usize, col: usize) -> Result<Thermo, &'static str> {
+        let thermo = self.values.get(self.ind(col, row)).ok_or("out of bounds")?;
         Ok(*thermo)
     }
 
     /// Set a value
-    pub fn set(&mut self, row: usize, col: usize, value: Thermo) -> Result<(), &str> {
+    pub fn set(&mut self, row: usize, col: usize, value: Thermo) -> Result<(), &'static str> {
         let ind = self.ind(col, row);
-        let thermo = self
-            .values
-            .get_mut(ind)
-            .ok_or("out of bounds")?;
+        let thermo = self.values.get_mut(ind).ok_or("out of bounds")?;
         *thermo = value;
         Ok(())
     }

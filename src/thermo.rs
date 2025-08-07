@@ -13,6 +13,14 @@ impl Thermo {
         Self::default()
     }
 
+    /// Infinite
+    pub fn with_inf() -> Self {
+        Self {
+            ds: 0.0,
+            dh: f64::INFINITY,
+        }
+    }
+
     /// Construct with values
     pub fn with_values(ds: f64, dh: f64) -> Self {
         Self { ds, dh }
