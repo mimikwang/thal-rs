@@ -17,7 +17,7 @@ impl Matrix {
     }
 
     /// Get element at row and col
-    pub fn get(&self, col: usize, row: usize) -> Result<Thermo, &str> {
+    pub fn get(&self, row: usize, col: usize) -> Result<Thermo, &str> {
         let thermo = self
             .values
             .get(self.ind(col, row))
@@ -26,7 +26,7 @@ impl Matrix {
     }
 
     /// Set a value
-    pub fn set(&mut self, col: usize, row: usize, value: Thermo) -> Result<(), &str> {
+    pub fn set(&mut self, row: usize, col: usize, value: Thermo) -> Result<(), &str> {
         let ind = self.ind(col, row);
         let thermo = self
             .values
@@ -36,7 +36,7 @@ impl Matrix {
         Ok(())
     }
 
-    fn ind(&self, col: usize, row: usize) -> usize {
+    fn ind(&self, row: usize, col: usize) -> usize {
         col * self.width + row
     }
 }
