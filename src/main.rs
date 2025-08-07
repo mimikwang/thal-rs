@@ -1,4 +1,5 @@
 mod matrix;
+mod mfe;
 mod thermo;
 
 fn main() {
