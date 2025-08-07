@@ -1,0 +1,42 @@
+use crate::thermo::Thermo;
+
+/// A 2D matrix represented by a 1D vector
+#[derive(Debug)]
+pub struct Matrix {
+    values: Vec<Thermo>,
+    width: usize,
+}
+
+impl Matrix {
+    /// Constructor
+    pub fn new(height: usize, width: usize) -> Self {
+        Self {
+            values: vec![Thermo::default(); width * height],
+            width,
+        }
+    }
+
+    /// Get element at row and col
+    pub fn get(&self, col: usize, row: usize) -> Result<Thermo, &str> {
+        let thermo = self
+            .values
+            .get(self.ind(col, row))
+            .ok_or("out of bounds")?;
+        Ok(*thermo)
+    }
+
+    /// Set a value
+    pub fn set(&mut self, col: usize, row: usize, value: Thermo) -> Result<(), &str> {
+        let ind = self.ind(col, row);
+        let thermo = self
+            .values
+            .get_mut(ind)
+            .ok_or("out of bounds")?;
+        *thermo = value;
+        Ok(())
+    }
+
+    fn ind(&self, col: usize, row: usize) -> usize {
+        col * self.width + row
+    }
+}
