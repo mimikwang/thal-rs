@@ -1,3 +1,5 @@
+pub mod loader;
+
 /// Holds enthalpy and entropy data
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Thermo {
