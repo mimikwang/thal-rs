@@ -1,4 +1,5 @@
-pub mod loader;
+mod loader;
+pub mod params;
 
 /// Holds enthalpy and entropy data
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
