@@ -209,5 +209,5 @@ fn parse_value(val: &str) -> Result<f64, &'static str> {
         return Ok(f64::INFINITY);
     }
 
-    Ok(val.parse::<f64>().map_err(|_| "value should be a number")?)
+    val.parse::<f64>().map_err(|_| "value should be a number")
 }

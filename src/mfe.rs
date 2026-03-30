@@ -1,4 +1,4 @@
-use crate::{matrix::Matrix, seq::is_base_pair, thermo::Thermo};
+use crate::{matrix::Matrix, seq::is_base_pair, thermo::{Thermo, params::ThermoParams}};
 
 /// Minimum free energy calculator based on zuker's algorithm
 ///
@@ -25,11 +25,14 @@ pub struct Mfe {
 
     /// Finished
     is_done: bool,
+
+    // The thermo parameters
+    thermo_params: ThermoParams,
 }
 
 impl Mfe {
     /// Construct a new MFE
-    pub fn new(seq1: Vec<u8>, seq2: Vec<u8>) -> Self {
+    pub fn new(seq1: Vec<u8>, seq2: Vec<u8>, thermo_params: ThermoParams) -> Self {
         let seq1_length = seq1.len();
         let seq2_length = seq2.len();
 
@@ -43,11 +46,12 @@ impl Mfe {
             seq2,
             seq2_length,
             is_done: false,
+            thermo_params,
         }
     }
 
     /// Run through algorithm
-    pub fn calculate(&mut self) -> Result<(), &str> {
+    pub fn calculate(&mut self) -> Result<(), &'static str> {
         if self.is_done {
             return Err("already calculated");
         }
