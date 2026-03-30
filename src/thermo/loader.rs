@@ -11,6 +11,14 @@ const STACK_DH: &'static str = "stack.dh";
 const STACH_DS: &'static str = "stack.ds";
 const STACKMM_DH: &'static str = "stackmm.dh";
 const STACKMM_DS: &'static str = "stackmm.ds";
+const TSTACK_DH: &'static str = "tstack.dh";
+const TSTACK_DS: &'static str = "tstack.ds";
+const DANGLE_DH: &'static str = "dangle.dh";
+const DANGLE_DS: &'static str = "dangle.ds";
+const LOOPS_DH: &'static str = "loops.dh";
+const LOOPS_DS: &'static str = "loops.ds";
+const TETRALOOP_DH: &'static str = "tetraloop.dh";
+const TETRALOOP_DS: &'static str = "tetraloop.ds";
 
 pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
     // Check to make sure paths exist
@@ -25,10 +33,44 @@ pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static s
 
     // Load files
     let mut output = HashMap::new();
-    load_data(&mut output, dh_path, true)?;
-    load_data(&mut output, dhmm_path, true)?;
-    load_data(&mut output, ds_path, false)?;
-    load_data(&mut output, dsmm_path, false)?;
+    read_data(&mut output, dh_path, true)?;
+    read_data(&mut output, dhmm_path, true)?;
+    read_data(&mut output, ds_path, false)?;
+    read_data(&mut output, dsmm_path, false)?;
+
+    Ok(output)
+}
+
+pub fn load_tstack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+    // Check to make sure paths exist
+    let dh_path = Path::new(file_path).join(TSTACK_DH);
+    let ds_path = Path::new(file_path).join(TSTACK_DS);
+
+    if !dh_path.exists() || !ds_path.exists() {
+        return Err("paths not found");
+    }
+
+    // Load files
+    let mut output = HashMap::new();
+    read_data(&mut output, dh_path, true)?;
+    read_data(&mut output, ds_path, false)?;
+
+    Ok(output)
+}
+
+pub fn load_dangle(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+    // Check to make sure paths exist
+    let dh_path = Path::new(file_path).join(DANGLE_DH);
+    let ds_path = Path::new(file_path).join(DANGLE_DS);
+
+    if !dh_path.exists() || !ds_path.exists() {
+        return Err("paths not found");
+    }
+
+    // Load files
+    let mut output = HashMap::new();
+    read_data(&mut output, dh_path, true)?;
+    read_data(&mut output, ds_path, false)?;
 
     Ok(output)
 }
@@ -36,7 +78,6 @@ pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static s
 fn parse_value(line: &str) -> Result<Option<(String, f64)>, &'static str> {
     let split = line.split(" ").collect::<Vec<&str>>();
     if split.len() != 2 {
-        println!("{:?}", split);
         return Err("invalid line");
     }
     if split[1] == "inf" {
@@ -50,7 +91,7 @@ fn parse_value(line: &str) -> Result<Option<(String, f64)>, &'static str> {
     Ok(Some((split[0].to_owned(), value)))
 }
 
-fn load_data(
+fn read_data(
     output: &mut HashMap<String, Thermo>,
     path: PathBuf,
     is_enthalpy: bool,
