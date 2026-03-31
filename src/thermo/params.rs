@@ -24,4 +24,67 @@ impl ThermoParams {
             loops: loader::load_loops(file_path)?,
         })
     }
+
+    pub fn get_stack(&self, b1: &[u8], b2: &[u8]) -> Result<Option<Thermo>, &'static str> {
+        let lookup = get_lookup(b1, b2)?;
+        let Some(thermo) = self.stack.get(&lookup) else {
+            return Ok(None);
+        };
+        Ok(Some(thermo.to_owned()))
+    }
+
+    pub fn get_tstack(&self, b1: &[u8], b2: &[u8]) -> Result<Option<Thermo>, &'static str> {
+        let lookup = get_lookup(b1, b2)?;
+        let Some(thermo) = self.tstack.get(&lookup) else {
+            return Ok(None);
+        };
+        Ok(Some(thermo.to_owned()))
+    }
+
+    pub fn get_dangle(&self, b1: &[u8], b2: &[u8]) -> Result<Option<Thermo>, &'static str> {
+        let lookup = get_lookup(b1, b2)?;
+        let Some(thermo) = self.dangle.get(&lookup) else {
+            return Ok(None);
+        };
+        Ok(Some(thermo.to_owned()))
+    }
+
+    pub fn get_tetraloop(&self, bases: &[u8]) -> Result<Option<Thermo>, &'static str> {
+        let lookup = u8_to_string(bases)?;
+        let Some(thermo) = self.tetraloop.get(&lookup) else {
+            return Ok(None);
+        };
+        Ok(Some(thermo.to_owned()))
+    }
+
+    pub fn get_internal(&self, loop_length: usize) -> Option<Thermo> {
+        let Some(thermo) = self.loops.internal.get(loop_length) else {
+            return None;
+        };
+        Some(thermo.to_owned())
+    }
+
+    pub fn get_bulge(&self, loop_length: usize) -> Option<Thermo> {
+        let Some(thermo) = self.loops.bulge.get(loop_length) else {
+            return None;
+        };
+        Some(thermo.to_owned())
+    }
+
+    pub fn get_hairpin(&self, loop_length: usize) -> Option<Thermo> {
+        let Some(thermo) = self.loops.hairpin.get(loop_length) else {
+            return None;
+        };
+        Some(thermo.to_owned())
+    }
+}
+
+fn u8_to_string(b1: &[u8]) -> Result<String, &'static str> {
+    String::from_utf8(b1.to_vec()).map_err(|_| "error parsing string")
+}
+
+fn get_lookup(b1: &[u8], b2: &[u8]) -> Result<String, &'static str> {
+    let b1_str = u8_to_string(b1)?;
+    let b2_str = u8_to_string(b2)?;
+    Ok(format!("{b1_str}_{b2_str}"))
 }
