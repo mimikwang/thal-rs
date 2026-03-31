@@ -158,9 +158,9 @@ struct Loop {
 
 #[derive(Default, Debug)]
 pub struct Loops {
-    internal: [Thermo; 30],
-    bulge: [Thermo; 30],
-    hairpin: [Thermo; 30],
+    pub internal: [Thermo; 30],
+    pub bulge: [Thermo; 30],
+    pub hairpin: [Thermo; 30],
 }
 
 fn parse_loop_line(line: &str) -> Result<Loop, &'static str> {

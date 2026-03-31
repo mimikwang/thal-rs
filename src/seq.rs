@@ -15,3 +15,18 @@ pub fn is_base_pair(b1: &u8, b2: &u8) -> bool {
 
     false
 }
+
+/// Check to see if bases are WC pairs
+pub fn is_base_pairs(b1: &[u8], b2: &[u8]) -> bool {
+    if b1.len() != b2.len() {
+        return false;
+    }
+
+    for (bb1, bb2) in b1.iter().zip(b2.iter()) {
+        if !is_base_pair(bb1, bb2) {
+            return false;
+        }
+    }
+
+    false
+}
