@@ -29,9 +29,14 @@ impl Thermo {
         Self { ds, dh }
     }
 
-    /// Calculate the gibbs free energy
-    pub fn dg(&self, temp: f64) -> f64 {
+    /// Calculate the gibbs free energy at room temperature
+    pub fn dg_with_temp(&self, temp: f64) -> f64 {
         self.dh - temp * self.ds
+    }
+
+    /// Calculate the gibbs free energy
+    pub fn dg(&self) -> f64 {
+        self.dg_with_temp(293.0)
     }
 }
 
@@ -67,4 +72,12 @@ impl std::ops::SubAssign for Thermo {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
+}
+
+// Pick the thermo with the lowest dg
+pub fn lowest_dg(t1: Thermo, t2: Thermo) -> Thermo {
+    if t1.dg() < t2.dg() {
+        return t1;
+    }
+    t2
 }

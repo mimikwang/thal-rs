@@ -77,6 +77,13 @@ impl ThermoParams {
         };
         Some(thermo.to_owned())
     }
+
+    pub fn at_penalty(&self, b1: &u8, b2: &u8) -> Thermo {
+        if (b1 == &b'A' && b2 == &b'T') || (b2 == &b'A' && b2 == &b'T') {
+            return Thermo::with_values(6.9, -2200.0);
+        }
+        Thermo::with_values(0.0, 0.0)
+    }
 }
 
 fn u8_to_string(b1: &[u8]) -> Result<String, &'static str> {
