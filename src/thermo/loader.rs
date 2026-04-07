@@ -5,7 +5,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::thermo::Thermo;
+use crate::{
+    errors::Result,
+    thermo::Thermo
+};
 
 const COMMENT_PREFIX: &'static str = "#";
 const STACK_DH: &'static str = "stack.dh";
@@ -21,7 +24,7 @@ const LOOPS_DS: &'static str = "loops.ds";
 const TETRALOOP_DH: &'static str = "tetraloop.dh";
 const TETRALOOP_DS: &'static str = "tetraloop.ds";
 
-pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(STACK_DH);
     let ds_path = Path::new(file_path).join(STACH_DS);
@@ -42,7 +45,7 @@ pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static s
     Ok(output)
 }
 
-pub fn load_tstack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+pub fn load_tstack(file_path: &str) -> Result<HashMap<String, Thermo>> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(TSTACK_DH);
     let ds_path = Path::new(file_path).join(TSTACK_DS);
@@ -59,7 +62,7 @@ pub fn load_tstack(file_path: &str) -> Result<HashMap<String, Thermo>, &'static 
     Ok(output)
 }
 
-pub fn load_dangle(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+pub fn load_dangle(file_path: &str) -> Result<HashMap<String, Thermo>> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(DANGLE_DH);
     let ds_path = Path::new(file_path).join(DANGLE_DS);
@@ -76,7 +79,7 @@ pub fn load_dangle(file_path: &str) -> Result<HashMap<String, Thermo>, &'static 
     Ok(output)
 }
 
-pub fn load_tetraloop(file_path: &str) -> Result<HashMap<String, Thermo>, &'static str> {
+pub fn load_tetraloop(file_path: &str) -> Result<HashMap<String, Thermo>> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(TETRALOOP_DH);
     let ds_path = Path::new(file_path).join(TETRALOOP_DS);
@@ -93,7 +96,7 @@ pub fn load_tetraloop(file_path: &str) -> Result<HashMap<String, Thermo>, &'stat
     Ok(output)
 }
 
-pub fn load_loops(file_path: &str) -> Result<Loops, &'static str> {
+pub fn load_loops(file_path: &str) -> Result<Loops> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(LOOPS_DH);
     let ds_path = Path::new(file_path).join(LOOPS_DS);
@@ -110,7 +113,7 @@ pub fn load_loops(file_path: &str) -> Result<Loops, &'static str> {
     Ok(loops)
 }
 
-fn parse_line(line: &str) -> Result<(String, f64), &'static str> {
+fn parse_line(line: &str) -> Result<(String, f64)> {
     let split = line.split(&[' ', '\t']).collect::<Vec<&str>>();
     if split.len() != 2 {
         return Err("invalid line");
@@ -122,7 +125,7 @@ fn read_data(
     output: &mut HashMap<String, Thermo>,
     path: PathBuf,
     is_enthalpy: bool,
-) -> Result<(), &'static str> {
+) -> Result<()> {
     let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
     for val in data.split("\n") {
         // Skip comments and empty lines
@@ -163,7 +166,7 @@ pub struct Loops {
     pub hairpin: [Thermo; 30],
 }
 
-fn parse_loop_line(line: &str) -> Result<Loop, &'static str> {
+fn parse_loop_line(line: &str) -> Result<Loop> {
     let split = line.split(&[' ', '\t']).collect::<Vec<&str>>();
     if split.len() != 4 {
         return Err("invalid line");
@@ -179,7 +182,7 @@ fn read_loop_data(
     output: &mut Loops,
     path: PathBuf,
     is_enthalpy: bool,
-) -> Result<(), &'static str> {
+) -> Result<()> {
     let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
     let mut loop_size = 0;
     for val in data.split("\n") {
@@ -204,7 +207,7 @@ fn read_loop_data(
     Ok(())
 }
 
-fn parse_value(val: &str) -> Result<f64, &'static str> {
+fn parse_value(val: &str) -> Result<f64> {
     if val == "inf" {
         return Ok(f64::INFINITY);
     }
