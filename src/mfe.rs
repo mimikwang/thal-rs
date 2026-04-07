@@ -1,4 +1,8 @@
-use crate::{matrix::Matrix, seq::is_base_pair, thermo::{Thermo, params::ThermoParams}};
+use crate::{
+    matrix::Matrix,
+    seq::is_base_pair,
+    thermo::{Thermo, lowest_dg, params::ThermoParams},
+};
 
 /// Minimum free energy calculator based on zuker's algorithm
 ///
@@ -122,4 +126,58 @@ impl Mfe {
     fn next_move(v: &Matrix, w: &Matrix, row: usize, col: usize) -> (usize, usize) {
         (row + 1, col + 1)
     }
+}
+
+/// Given 2 pairs of bases, calculate the lowest end thermo
+///
+/// bases1 is always oriented 5' -> 3' and bases2 is always oriented 3' -> 5'
+///
+/// The best choices can be that they stack:
+///
+/// 5' -> 3'
+/// b1_0 b1_1
+/// b2_0 b2_1
+/// 3' -> 5'
+///
+/// This is only possible if b1_1 and b2_1 are WC pairs
+///
+/// Another choice is that they're dangling
+///
+/// b1_0
+///     \
+///      b1_1
+///      b2_1
+///     /
+/// b2_0
+fn calc_lowest_end_thermo(
+    bases1: [u8; 2],
+    bases2: [u8; 2],
+    thermo_params: &ThermoParams,
+) -> Result<Thermo, &'static str> {
+    let b1_0 = bases1[0];
+    let b1_1 = bases1[1];
+    let b2_0 = bases2[0];
+    let b2_1 = bases2[1];
+
+    let thermo_inf = Thermo::with_inf();
+    let base = thermo_params.at_penalty(&b1_0, &b2_0);
+
+    if is_base_pair(&b1_1, &b2_1) {
+        let mut stacked = base;
+        if let Some(ts) = thermo_params.get_tstack(&bases1, &bases2)? {
+            stacked += ts;
+        }
+        return Ok(lowest_dg(thermo_inf, stacked));
+    }
+
+    let mut dangling = base;
+    if let Some(d1) = thermo_params.get_dangle(&bases1, &[b2_1])? {
+        dangling += d1;
+    }
+
+    if let Some(d2) = thermo_params.get_dangle(&[b1_1], &bases2)? {
+        dangling += d2;
+    }
+
+    Ok(lowest_dg(thermo_inf, dangling))
 }
