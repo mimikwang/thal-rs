@@ -1,11 +1,12 @@
-use crate::{mfe::Mfe, thermo::params::ThermoParams};
+use crate::{errors::Result, mfe::Mfe, thermo::params::ThermoParams};
 
+mod errors;
 mod matrix;
 mod mfe;
 mod seq;
 mod thermo;
 
-fn main() -> Result<(), &'static str> {
+fn main() -> Result<()> {
     let params = ThermoParams::with_file_path("thermo")?;
     let mut mfe = Mfe::new(
         vec![b'A', b'G', b'C', b'T'],

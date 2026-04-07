@@ -1,4 +1,5 @@
 use crate::{
+    errors::Result,
     matrix::Matrix,
     seq::is_base_pair,
     thermo::{Thermo, lowest_dg, params::ThermoParams},
@@ -55,7 +56,7 @@ impl Mfe {
     }
 
     /// Run through algorithm
-    pub fn calculate(&mut self) -> Result<(), &'static str> {
+    pub fn calculate(&mut self) -> Result<()> {
         if self.is_done {
             return Err("already calculated");
         }
@@ -85,7 +86,7 @@ impl Mfe {
     }
 
     /// Retrieve the base for a sequence at a specific position
-    fn get_base(seq: &[u8], pos: usize) -> Result<&u8, &'static str> {
+    fn get_base(seq: &[u8], pos: usize) -> Result<&u8> {
         seq.get(pos).ok_or("out of bounds")
     }
 
@@ -96,7 +97,7 @@ impl Mfe {
         col: usize,
         seq1: &[u8],
         seq2: &[u8],
-    ) -> Result<(), &'static str> {
+    ) -> Result<()> {
         let b1 = Self::get_base(seq1, row)?;
         let b2 = Self::get_base(seq2, col)?;
 
@@ -118,7 +119,7 @@ impl Mfe {
         col: usize,
         seq1: &[u8],
         seq2: &[u8],
-    ) -> Result<(), &'static str> {
+    ) -> Result<()> {
         Ok(())
     }
 
@@ -153,7 +154,7 @@ fn calc_lowest_end_thermo(
     bases1: [u8; 2],
     bases2: [u8; 2],
     thermo_params: &ThermoParams,
-) -> Result<Thermo, &'static str> {
+) -> Result<Thermo> {
     let b1_0 = bases1[0];
     let b1_1 = bases1[1];
     let b2_0 = bases2[0];

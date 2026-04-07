@@ -1,3 +1,4 @@
+use crate::errors::Result;
 use crate::thermo::Thermo;
 
 /// A 2D matrix represented by a 1D vector
@@ -17,13 +18,13 @@ impl Matrix {
     }
 
     /// Get element at row and col
-    pub fn get(&self, row: usize, col: usize) -> Result<Thermo, &'static str> {
+    pub fn get(&self, row: usize, col: usize) -> Result<Thermo> {
         let thermo = self.values.get(self.ind(col, row)).ok_or("out of bounds")?;
         Ok(*thermo)
     }
 
     /// Set a value
-    pub fn set(&mut self, row: usize, col: usize, value: Thermo) -> Result<(), &'static str> {
+    pub fn set(&mut self, row: usize, col: usize, value: Thermo) -> Result<()> {
         let ind = self.ind(col, row);
         let thermo = self.values.get_mut(ind).ok_or("out of bounds")?;
         *thermo = value;
