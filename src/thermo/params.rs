@@ -58,28 +58,22 @@ impl ThermoParams {
     }
 
     pub fn get_internal(&self, loop_length: usize) -> Option<Thermo> {
-        let Some(thermo) = self.loops.internal.get(loop_length) else {
-            return None;
-        };
+        let thermo = self.loops.internal.get(loop_length)?;
         Some(thermo.to_owned())
     }
 
     pub fn get_bulge(&self, loop_length: usize) -> Option<Thermo> {
-        let Some(thermo) = self.loops.bulge.get(loop_length) else {
-            return None;
-        };
+        let thermo = self.loops.bulge.get(loop_length)?;
         Some(thermo.to_owned())
     }
 
     pub fn get_hairpin(&self, loop_length: usize) -> Option<Thermo> {
-        let Some(thermo) = self.loops.hairpin.get(loop_length) else {
-            return None;
-        };
+        let thermo = self.loops.hairpin.get(loop_length)?;
         Some(thermo.to_owned())
     }
 
     pub fn at_penalty(&self, b1: &u8, b2: &u8) -> Thermo {
-        if (b1 == &b'A' && b2 == &b'T') || (b2 == &b'A' && b2 == &b'T') {
+        if (b2 == &b'A' || b1 == &b'A') && b2 == &b'T' {
             return Thermo::with_values(6.9, -2200.0);
         }
         Thermo::with_values(0.0, 0.0)
