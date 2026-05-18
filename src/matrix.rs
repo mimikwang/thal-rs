@@ -2,7 +2,7 @@ use crate::errors::Result;
 use crate::thermo::Thermo;
 
 /// A 2D matrix represented by a 1D vector
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Matrix {
     values: Vec<Thermo>,
     width: usize,

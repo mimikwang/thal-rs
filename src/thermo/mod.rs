@@ -1,6 +1,8 @@
 mod loader;
 pub mod params;
 
+const MIN_ENTROPY: f64 = -3224.0;
+
 /// Holds enthalpy and entropy data
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Thermo {
@@ -20,6 +22,22 @@ impl Thermo {
     pub fn with_inf() -> Self {
         Self {
             ds: 0.0,
+            dh: f64::INFINITY,
+        }
+    }
+
+    /// Initial values for base pairs
+    pub fn init_base_pairs() -> Self {
+        Self {
+            ds: MIN_ENTROPY,
+            dh: 0.0,
+        }
+    }
+
+    /// Initial values for non base pairs
+    pub fn init_not_base_pairs() -> Self {
+        Self {
+            ds: -1.0,
             dh: f64::INFINITY,
         }
     }
