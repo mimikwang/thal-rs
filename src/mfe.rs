@@ -91,13 +91,7 @@ impl Mfe {
     }
 
     /// For V, check to see if S_i and S_j can base pair. If not, then it's set to infinity
-    fn fill_v(
-        v: &mut Matrix,
-        row: usize,
-        col: usize,
-        seq1: &[u8],
-        seq2: &[u8],
-    ) -> Result<()> {
+    fn fill_v(v: &mut Matrix, row: usize, col: usize, seq1: &[u8], seq2: &[u8]) -> Result<()> {
         let b1 = Self::get_base(seq1, row)?;
         let b2 = Self::get_base(seq2, col)?;
 
@@ -113,13 +107,7 @@ impl Mfe {
 
     /// Fill w with values - either the hairpin, stacking region, buldge loop, or interior loop.
     /// We'll largely ignore bifurcation loops.
-    fn fill_w(
-        w: &mut Matrix,
-        row: usize,
-        col: usize,
-        seq1: &[u8],
-        seq2: &[u8],
-    ) -> Result<()> {
+    fn fill_w(w: &mut Matrix, row: usize, col: usize, seq1: &[u8], seq2: &[u8]) -> Result<()> {
         Ok(())
     }
 

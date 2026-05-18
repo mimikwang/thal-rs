@@ -5,96 +5,47 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{
-    errors::Result,
-    thermo::Thermo
-};
+use crate::{errors::Result, thermo::Thermo};
 
-const COMMENT_PREFIX: &'static str = "#";
-const STACK_DH: &'static str = "stack.dh";
-const STACH_DS: &'static str = "stack.ds";
-const STACKMM_DH: &'static str = "stackmm.dh";
-const STACKMM_DS: &'static str = "stackmm.ds";
-const TSTACK_DH: &'static str = "tstack.dh";
-const TSTACK_DS: &'static str = "tstack.ds";
-const DANGLE_DH: &'static str = "dangle.dh";
-const DANGLE_DS: &'static str = "dangle.ds";
-const LOOPS_DH: &'static str = "loops.dh";
-const LOOPS_DS: &'static str = "loops.ds";
-const TETRALOOP_DH: &'static str = "tetraloop.dh";
-const TETRALOOP_DS: &'static str = "tetraloop.ds";
+const COMMENT_PREFIX: &str = "#";
+const STACK_DH: &str = "stack.dh";
+const STACK_DS: &str = "stack.ds";
+const STACKMM_DH: &str = "stackmm.dh";
+const STACKMM_DS: &str = "stackmm.ds";
+const TSTACK_DH: &str = "tstack.dh";
+const TSTACK_DS: &str = "tstack.ds";
+const DANGLE_DH: &str = "dangle.dh";
+const DANGLE_DS: &str = "dangle.ds";
+const LOOPS_DH: &str = "loops.dh";
+const LOOPS_DS: &str = "loops.ds";
+const TETRALOOP_DH: &str = "tetraloop.dh";
+const TETRALOOP_DS: &str = "tetraloop.ds";
 
-pub fn load_stack(file_path: &str) -> Result<HashMap<String, Thermo>> {
-    // Check to make sure paths exist
-    let dh_path = Path::new(file_path).join(STACK_DH);
-    let ds_path = Path::new(file_path).join(STACH_DS);
-    let dhmm_path = Path::new(file_path).join(STACKMM_DH);
-    let dsmm_path = Path::new(file_path).join(STACKMM_DS);
+macro_rules! data_fn {
+    ($name:ident, $file_name_ds:ident, $file_name_dh:ident) => {
+        pub fn $name(file_path: &str) -> Result<HashMap<String, Thermo>> {
+            // Check ot make sure path exists
+            let dh_path = Path::new(file_path).join($file_name_dh);
+            let ds_path = Path::new(file_path).join($file_name_ds);
 
-    if !dh_path.exists() || !ds_path.exists() || !dhmm_path.exists() || !dsmm_path.exists() {
-        return Err("paths not found");
-    }
+            if !dh_path.exists() || !ds_path.exists() {
+                return Err("paths not found");
+            }
 
-    // Load files
-    let mut output = HashMap::new();
-    read_data(&mut output, dh_path, true)?;
-    read_data(&mut output, dhmm_path, true)?;
-    read_data(&mut output, ds_path, false)?;
-    read_data(&mut output, dsmm_path, false)?;
+            let mut output = HashMap::new();
+            read_data(&mut output, dh_path, true)?;
+            read_data(&mut output, ds_path, false)?;
 
-    Ok(output)
+            Ok(output)
+        }
+    };
 }
 
-pub fn load_tstack(file_path: &str) -> Result<HashMap<String, Thermo>> {
-    // Check to make sure paths exist
-    let dh_path = Path::new(file_path).join(TSTACK_DH);
-    let ds_path = Path::new(file_path).join(TSTACK_DS);
-
-    if !dh_path.exists() || !ds_path.exists() {
-        return Err("paths not found");
-    }
-
-    // Load files
-    let mut output = HashMap::new();
-    read_data(&mut output, dh_path, true)?;
-    read_data(&mut output, ds_path, false)?;
-
-    Ok(output)
-}
-
-pub fn load_dangle(file_path: &str) -> Result<HashMap<String, Thermo>> {
-    // Check to make sure paths exist
-    let dh_path = Path::new(file_path).join(DANGLE_DH);
-    let ds_path = Path::new(file_path).join(DANGLE_DS);
-
-    if !dh_path.exists() || !ds_path.exists() {
-        return Err("paths not found");
-    }
-
-    // Load files
-    let mut output = HashMap::new();
-    read_data(&mut output, dh_path, true)?;
-    read_data(&mut output, ds_path, false)?;
-
-    Ok(output)
-}
-
-pub fn load_tetraloop(file_path: &str) -> Result<HashMap<String, Thermo>> {
-    // Check to make sure paths exist
-    let dh_path = Path::new(file_path).join(TETRALOOP_DH);
-    let ds_path = Path::new(file_path).join(TETRALOOP_DS);
-
-    if !dh_path.exists() || !ds_path.exists() {
-        return Err("paths not found");
-    }
-
-    // Load files
-    let mut output = HashMap::new();
-    read_data(&mut output, dh_path, true)?;
-    read_data(&mut output, ds_path, false)?;
-
-    Ok(output)
-}
+data_fn!(load_stack, STACK_DS, STACK_DH);
+data_fn!(load_stack_mm, STACKMM_DS, STACKMM_DH);
+data_fn!(load_tstack, TSTACK_DS, TSTACK_DH);
+data_fn!(load_dangle, DANGLE_DS, DANGLE_DH);
+data_fn!(load_tetraloop, TETRALOOP_DS, TETRALOOP_DH);
 
 pub fn load_loops(file_path: &str) -> Result<Loops> {
     // Check to make sure paths exist
@@ -121,11 +72,7 @@ fn parse_line(line: &str) -> Result<(String, f64)> {
     Ok((split[0].to_owned(), parse_value(split[1])?))
 }
 
-fn read_data(
-    output: &mut HashMap<String, Thermo>,
-    path: PathBuf,
-    is_enthalpy: bool,
-) -> Result<()> {
+fn read_data(output: &mut HashMap<String, Thermo>, path: PathBuf, is_enthalpy: bool) -> Result<()> {
     let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
     for val in data.split("\n") {
         // Skip comments and empty lines
@@ -178,11 +125,7 @@ fn parse_loop_line(line: &str) -> Result<Loop> {
     })
 }
 
-fn read_loop_data(
-    output: &mut Loops,
-    path: PathBuf,
-    is_enthalpy: bool,
-) -> Result<()> {
+fn read_loop_data(output: &mut Loops, path: PathBuf, is_enthalpy: bool) -> Result<()> {
     let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
     let mut loop_size = 0;
     for val in data.split("\n") {
@@ -213,4 +156,37 @@ fn parse_value(val: &str) -> Result<f64> {
     }
 
     val.parse::<f64>().map_err(|_| "value should be a number")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_path() -> String {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("thermo");
+        path.to_str().expect("path error").to_owned()
+    }
+
+    #[test]
+    fn test_load_stack() {
+        let loaded = load_stack(&get_path());
+        assert!(loaded.is_ok());
+
+        let loaded = loaded.unwrap();
+        assert_eq!(
+            loaded.get("AA_TT"),
+            Some(&Thermo {
+                ds: -22.2,
+                dh: -7900.0
+            })
+        );
+        assert_eq!(
+            loaded.get("AA_AA"),
+            Some(&Thermo {
+                ds: f64::INFINITY,
+                dh: f64::INFINITY
+            })
+        )
+    }
 }
