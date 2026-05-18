@@ -1,11 +1,11 @@
 const A: u8 = b'A';
 const G: u8 = b'G';
 const C: u8 = b'C';
-const U: u8 = b'U';
+const T: u8 = b'T';
 
 /// Check to see if two bases are WC pairs
 pub fn is_base_pair(b1: &u8, b2: &u8) -> bool {
-    if (b1 == &A && b2 == &U) || (b1 == &U && b2 == &A) {
+    if (b1 == &A && b2 == &T) || (b1 == &T && b2 == &A) {
         return true;
     }
 
@@ -28,5 +28,32 @@ pub fn is_base_pairs(b1: &[u8], b2: &[u8]) -> bool {
         }
     }
 
-    false
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_base_pair() {
+        assert!(is_base_pair(&b'T', &b'A'));
+        assert!(is_base_pair(&b'A', &b'T'));
+        assert!(is_base_pair(&b'C', &b'G'));
+        assert!(is_base_pair(&b'G', &b'C'));
+        assert!(!is_base_pair(&b'T', &b'T'));
+        assert!(!is_base_pair(&b'G', &b'T'));
+    }
+
+    #[test]
+    fn test_is_base_pairs() {
+        assert!(is_base_pairs(
+            &[b'T', b'A', b'C', b'G'],
+            &[b'A', b'T', b'G', b'C']
+        ));
+        assert!(!is_base_pairs(
+            &[b'T', b'A', b'C', b'G'],
+            &[b'A', b'T', b'G', b'G']
+        ));
+    }
 }
