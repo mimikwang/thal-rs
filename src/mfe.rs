@@ -149,7 +149,7 @@ fn calc_lowest_end_thermo(
     let b2_1 = bases2[1];
 
     let thermo_inf = Thermo::with_inf();
-    let base = thermo_params.at_penalty(&b1_0, &b2_0);
+    let base = ThermoParams::at_penalty(&b1_0, &b2_0);
 
     if is_base_pair(&b1_1, &b2_1) {
         let mut stacked = base;
