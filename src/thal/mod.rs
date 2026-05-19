@@ -40,60 +40,7 @@ pub fn lsh(
     let b20 = seq2[j - 1];
     let b21 = seq2[j];
 
-    // If not base pairs, then skip since we already initialize it to be the right values
-    if !is_base_pair(&b11, &b21) {
-        return Ok(None);
-    }
-
-    // Get the AT penalty
-    let at_penalty_thermo = ThermoParams::at_penalty(&b11, &b21);
-
-    // Initialize thermo with stacking
-    let mut thermo = at_penalty_thermo;
-    if let Some(t) = params.get_tstack(&[b21, b20], &[b11, b10])? {
-        if f64::is_finite(t.dh) {
-            thermo += t;
-        }
-    }
-
-    // If the b10 and b20 are not base pairs
-    if !is_base_pair(&b10, &b20) {
-        let mut thermo_current = at_penalty_thermo;
-
-        let thermo_dangle_3 = params.get_dangle(&[b21, b20], &[b11])?;
-        let thermo_dangle_5 = params.get_dangle(&[b21], &[b11, b10])?;
-
-        // Get the dangling 3 end
-        if b10 == b'N'
-            && let Some(t) = thermo_dangle_3
-        {
-            if f64::is_finite(t.dh) {
-                thermo_current += t;
-            }
-        }
-        // Get the dangling 5 end
-        else if b20 == b'N'
-            && let Some(t) = thermo_dangle_5
-        {
-            if f64::is_finite(t.dh) {
-                thermo_current += t;
-            }
-        } else {
-            if let Some(t) = thermo_dangle_3 {
-                thermo_current += t;
-            }
-            if let Some(t) = thermo_dangle_5 {
-                thermo_current += t;
-            }
-        }
-
-        // If thermo current has lower gibbs free energy, make thermo the current
-        if thermo_current.dg() < thermo.dg() {
-            thermo = thermo_current;
-        }
-    }
-
-    Ok(Some(thermo))
+    get_terminal_thermo(&[b21, b20], &[b11, b10], params)
 }
 
 pub fn rsh(
@@ -108,47 +55,62 @@ pub fn rsh(
     let b20 = seq2[j];
     let b21 = seq2[j + 1];
 
-    // If not base pairs, then skip since we already initialize it to be the right values
+    get_terminal_thermo(&[b10, b11], &[b20, b21], params)
+}
+
+/// Get the optimal terminal thermo
+///
+/// The seq1 is oriented as 5' to 3' and seq2 is oriented 3' to 5'
+///
+/// b10
+///    \
+///    b11
+///    b21
+///    /
+/// b20
+fn get_terminal_thermo(
+    seq1: &[u8; 2],
+    seq2: &[u8; 2],
+    params: &ThermoParams,
+) -> Result<Option<Thermo>> {
+    let b10 = seq1[0];
+    let b11 = seq1[1];
+    let b20 = seq2[0];
+    let b21 = seq2[1];
+
+    // If b11 and b21 are base pairs
     if !is_base_pair(&b10, &b20) {
         return Ok(None);
     }
 
-    // Get the AT penalty
+    // Get the at penalty
     let at_penalty_thermo = ThermoParams::at_penalty(&b10, &b20);
 
-    // Initialize thermo with stacking
+    // Initialize thermo with terminal stacking
     let mut thermo = at_penalty_thermo;
-    if let Some(t) = params.get_tstack(&[b10, b11], &[b20, b21])? {
-        if f64::is_finite(t.dh) {
-            thermo += t;
-        }
+    if let Some(t) = params.get_tstack(&[b10, b11], &[b20, b21])?
+        && f64::is_finite(t.dh)
+    {
+        thermo += t;
     }
 
-    // If the b11 and b21 are not base pairs
+    // If b11 and b21 are not base pairs
     if !is_base_pair(&b11, &b21) {
         let mut thermo_current = at_penalty_thermo;
-
         let thermo_dangle_3 = params.get_dangle(&[b10, b11], &[b20])?;
         let thermo_dangle_5 = params.get_dangle(&[b10], &[b20, b21])?;
 
-        // Get the dangling 3 end only
         if b21 == b'N'
             && let Some(t) = thermo_dangle_3
+            && f64::is_finite(t.dh)
         {
-            if f64::is_finite(t.dh) {
-                thermo_current += t;
-            }
-        }
-        // Get the dangling 5 end only
-        else if b11 == b'N'
+            thermo_current += t;
+        } else if b11 == b'N'
             && let Some(t) = thermo_dangle_5
+            && f64::is_finite(t.dh)
         {
-            if f64::is_finite(t.dh) {
-                thermo_current += t;
-            }
-        }
-        // Get Both
-        else {
+            thermo_current += t;
+        } else {
             if let Some(t) = thermo_dangle_3 {
                 thermo_current += t;
             }
@@ -157,7 +119,6 @@ pub fn rsh(
             }
         }
 
-        // If thermo current has lower gibbs free energy, make thermo the current
         if thermo_current.dg() < thermo.dg() {
             thermo = thermo_current;
         }
@@ -211,6 +172,18 @@ mod tests {
         assert_eq!(
             lsh(&seq1, &seq2, 19, 15, &params),
             Ok(Some(Thermo::with_values(-27.4, -9800.0)))
+        );
+        assert_eq!(
+            lsh(&seq1, &seq2, 2, 2, &params),
+            Ok(Some(Thermo::with_values(-19.3, -7000.0)))
+        );
+        assert_eq!(
+            lsh(&seq1, &seq2, 11, 8, &params),
+            Ok(Some(Thermo::with_values(-9.200000000000001, -3800.0)))
+        );
+        assert_eq!(
+            lsh(&seq1, &seq2, 7, 14, &params),
+            Ok(Some(Thermo::with_values(-6.699999999999999, -2800.0)))
         );
     }
 
