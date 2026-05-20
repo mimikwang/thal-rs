@@ -4,6 +4,7 @@ mod errors;
 mod matrix;
 mod mfe;
 mod seq;
+mod thal;
 mod thermo;
 
 fn main() -> Result<()> {

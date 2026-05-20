@@ -68,11 +68,15 @@ impl ThermoParams {
     get_loop!(get_bulge, bulge);
     get_loop!(get_hairpin, hairpin);
 
-    pub fn at_penalty(&self, b1: &u8, b2: &u8) -> Thermo {
-        if (b2 == &b'A' || b1 == &b'A') && b2 == &b'T' {
-            return Thermo::with_values(6.9, -2200.0);
+    pub fn at_penalty(b1: &u8, b2: &u8) -> Thermo {
+        if (b1 == &b'A' && b2 == &b'T') || (b1 == &b'T' && b2 == &b'A') {
+            return Thermo::with_values(6.9, 2200.0);
         }
         Thermo::with_values(0.0, 0.0)
+    }
+
+    pub fn internal_loop(loop_size_diff: usize) -> Thermo {
+        Thermo::with_values((-300.0 / 310.15) * loop_size_diff as f64, 0.0)
     }
 }
 
@@ -84,4 +88,25 @@ fn get_lookup(b1: &[u8], b2: &[u8]) -> Result<String> {
     let b1_str = u8_to_string(b1)?;
     let b2_str = u8_to_string(b2)?;
     Ok(format!("{b1_str}_{b2_str}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_at_penalty() {
+        assert_eq!(
+            ThermoParams::at_penalty(&b'A', &b'T'),
+            Thermo::with_values(6.9, 2200.0)
+        );
+        assert_eq!(
+            ThermoParams::at_penalty(&b'T', &b'A'),
+            Thermo::with_values(6.9, 2200.0)
+        );
+        assert_eq!(
+            ThermoParams::at_penalty(&b'A', &b'A'),
+            Thermo::with_values(0.0, 0.0)
+        );
+    }
 }

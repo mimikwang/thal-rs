@@ -12,11 +12,11 @@ use crate::{
 pub struct Mfe {
     /// W contains the minimum free energy of all possible admissible structures formed from the
     /// subsequence S_ij.
-    w: Matrix,
+    w: Matrix<Thermo>,
     /// V contains the minimum free energy of all possible admissible structures formed from S_ij
     /// in which S_i and S_j base pair with each other. If S_i and S_j cannot base pair, then V_ij
     /// is infinity.
-    v: Matrix,
+    v: Matrix<Thermo>,
     /// Current row position - i.e. i in the paper
     current_row: usize,
     /// Current column position - i.e. j in the paper
@@ -91,7 +91,13 @@ impl Mfe {
     }
 
     /// For V, check to see if S_i and S_j can base pair. If not, then it's set to infinity
-    fn fill_v(v: &mut Matrix, row: usize, col: usize, seq1: &[u8], seq2: &[u8]) -> Result<()> {
+    fn fill_v(
+        v: &mut Matrix<Thermo>,
+        row: usize,
+        col: usize,
+        seq1: &[u8],
+        seq2: &[u8],
+    ) -> Result<()> {
         let b1 = Self::get_base(seq1, row)?;
         let b2 = Self::get_base(seq2, col)?;
 
@@ -107,12 +113,18 @@ impl Mfe {
 
     /// Fill w with values - either the hairpin, stacking region, buldge loop, or interior loop.
     /// We'll largely ignore bifurcation loops.
-    fn fill_w(w: &mut Matrix, row: usize, col: usize, seq1: &[u8], seq2: &[u8]) -> Result<()> {
+    fn fill_w(
+        w: &mut Matrix<Thermo>,
+        row: usize,
+        col: usize,
+        seq1: &[u8],
+        seq2: &[u8],
+    ) -> Result<()> {
         Ok(())
     }
 
     /// Decide on the next move based on the matrices
-    fn next_move(v: &Matrix, w: &Matrix, row: usize, col: usize) -> (usize, usize) {
+    fn next_move(v: &Matrix<Thermo>, w: &Matrix<Thermo>, row: usize, col: usize) -> (usize, usize) {
         (row + 1, col + 1)
     }
 }
@@ -149,7 +161,7 @@ fn calc_lowest_end_thermo(
     let b2_1 = bases2[1];
 
     let thermo_inf = Thermo::with_inf();
-    let base = thermo_params.at_penalty(&b1_0, &b2_0);
+    let base = ThermoParams::at_penalty(&b1_0, &b2_0);
 
     if is_base_pair(&b1_1, &b2_1) {
         let mut stacked = base;
