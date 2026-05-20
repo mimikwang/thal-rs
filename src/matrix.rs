@@ -16,6 +16,13 @@ impl<T: Default + Clone + Copy> Matrix<T> {
         }
     }
 
+    pub fn with_value(height: usize, width: usize, value: T) -> Self {
+        Self {
+            values: vec![value; width * height],
+            width,
+        }
+    }
+
     /// Get element at row and col
     pub fn get(&self, row: usize, col: usize) -> Result<T> {
         let val = self.values.get(self.ind(col, row)).ok_or("out of bounds")?;
