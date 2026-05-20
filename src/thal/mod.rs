@@ -5,6 +5,48 @@ use crate::{
     thermo::{Thermo, params::ThermoParams},
 };
 
+pub fn thal(seq1: &[u8], seq2: &[u8], params: &ThermoParams) -> Result<Thermo> {
+    let mut seq1 = seq1.to_owned();
+    let mut seq2 = seq2.to_owned();
+    pad_seq(&mut seq1);
+    pad_seq(&mut seq2);
+
+    let mut mat = init_matrix(&seq1, &seq2)?;
+    let mut traceback_mat = Matrix::with_value(seq1.len(), seq2.len(), (-1, -1));
+    fill_matrix(30, &mut mat, &mut traceback_mat, &seq1, &seq2, params)?;
+
+    let mut best_i = 1;
+    let mut best_j = 1;
+    let mut thermo = Thermo::with_inf();
+
+    for i in 1..seq1.len() {
+        for j in 1..seq2.len() {
+            if is_base_pair(&seq1[i], &seq2[j]) {
+                let mut thermo_current = mat.get(i, j)? + Thermo::with_values(-5.7, 200.0);
+                if let Some(t) = rsh(&seq1, &seq2, i, j, params)? {
+                    thermo_current += t;
+                }
+
+                if thermo_current.dg() < thermo.dg() {
+                    thermo = thermo_current;
+                    best_i = i;
+                    best_j = j;
+                }
+            }
+        }
+    }
+
+    if is_base_pair(&seq1[best_i], &seq2[best_j]) {
+        let rsh_thermo = rsh(&seq1, &seq2, best_i, best_j, params)?;
+        thermo = mat.get(best_i, best_j)?;
+        if let Some(t) = rsh_thermo {
+            thermo += t;
+        }
+    }
+
+    Ok(thermo)
+}
+
 /// Add N's at the start and end of a sequence
 pub fn pad_seq(seq: &mut Vec<u8>) {
     seq.push(b'N');
@@ -244,9 +286,10 @@ fn get_internal_thermo(
         }
     } else if loop_size_1 == 1 && loop_size_2 == 1 {
         thermo = Thermo::new();
-        let stack_thermo_1 = params.get_stack(&[seq1[i], seq1[i + 1]], &[seq2[j], seq2[j + 1]])?;
+        let stack_thermo_1 =
+            params.get_stack_mm(&[seq1[i], seq1[i + 1]], &[seq2[j], seq2[j + 1]])?;
         let stack_thermo_2 =
-            params.get_stack(&[seq2[jj], seq2[jj - 1]], &[seq1[ii], seq1[ii - 1]])?;
+            params.get_stack_mm(&[seq2[jj], seq2[jj - 1]], &[seq1[ii], seq1[ii - 1]])?;
 
         if let Some(t) = stack_thermo_1
             && f64::is_finite(t.dh)
@@ -335,6 +378,17 @@ mod tests {
     }
 
     #[test]
+    fn test_thal() {
+        let params = get_thermo_params();
+        let seq1 = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
+        let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
+
+        let res = thal(&seq1, &seq2, &params);
+        assert!(res.is_ok());
+        assert_eq!(res, Ok(Thermo::with_values(-288.7836433983556, -101400.0)));
+    }
+
+    #[test]
     fn test_fill_matrix() {
         let params = get_thermo_params();
         let seq1 = "NACN".as_bytes().to_vec();
@@ -389,8 +443,15 @@ mod tests {
             mat.get(2, 5),
             Ok(Thermo::with_values(-31.099999999999998, -11900.0))
         );
+        assert_eq!(
+            mat.get(7, 6),
+            Ok(Thermo::with_values(-76.89999999999999, -29800.0))
+        );
         assert_eq!(mat.get(8, 1), Ok(Thermo::with_values(-10.9, -4000.0)));
-
+        assert_eq!(
+            mat.get(17, 17),
+            Ok(Thermo::with_values(-248.98364339835564, -85400.0))
+        );
         assert_eq!(traceback_mat.get(0, 0), Ok((-1, -1)));
         assert_eq!(traceback_mat.get(1, 10), Ok((-1, -1)));
 
@@ -506,6 +567,10 @@ mod tests {
         assert_eq!(
             get_internal_thermo(3, 1, 4, 10, &seq1, &seq2, &params),
             Ok(Some(Thermo::with_values(-12.57, 0.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(5, 4, 7, 6, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-4.6, -1400.0)))
         );
     }
 }
