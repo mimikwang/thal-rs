@@ -11,7 +11,7 @@ pub fn pad_seq(seq: &mut Vec<u8>) {
     seq.insert(0, b'N');
 }
 
-pub fn init_matrix(seq1: &[u8], seq2: &[u8]) -> Result<Matrix> {
+pub fn init_matrix(seq1: &[u8], seq2: &[u8]) -> Result<Matrix<Thermo>> {
     let mut mat = Matrix::new(seq1.len(), seq2.len());
 
     // Fill based on base pairings
