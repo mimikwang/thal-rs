@@ -74,6 +74,10 @@ impl ThermoParams {
         }
         Thermo::with_values(0.0, 0.0)
     }
+
+    pub fn internal_loop(loop_size_diff: usize) -> Thermo {
+        Thermo::with_values((-300.0 / 310.15) * loop_size_diff as f64, 0.0)
+    }
 }
 
 fn u8_to_string(b1: &[u8]) -> Result<String> {

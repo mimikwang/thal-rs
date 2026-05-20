@@ -127,6 +127,92 @@ fn get_terminal_thermo(
     Ok(Some(thermo))
 }
 
+fn get_internal_thermo(
+    i: usize,
+    j: usize,
+    ii: usize,
+    jj: usize,
+    seq1: &[u8],
+    seq2: &[u8],
+    params: &ThermoParams,
+) -> Result<Option<Thermo>> {
+    let loop_size_1 = ii - i - 1;
+    let loop_size_2 = jj - j - 1;
+    let loop_size = loop_size_1 + loop_size_2 - 1;
+    let mut thermo = Thermo::with_inf();
+    let bulge_thermo = params.get_bulge(loop_size);
+
+    if loop_size_1 == 0 || loop_size_2 == 0 {
+        thermo = Thermo::new();
+        if let Some(t) = bulge_thermo
+            && f64::is_finite(t.dh)
+        {
+            thermo += t;
+        }
+        if loop_size_1 == 1 || loop_size_2 == 1 {
+            let stack_thermo = params.get_stack(&[seq1[i], seq1[ii]], &[seq2[j], seq2[jj]])?;
+            if let Some(t) = stack_thermo
+                && f64::is_finite(t.dh)
+            {
+                thermo += t;
+            }
+        } else {
+            thermo += ThermoParams::at_penalty(&seq1[i], &seq2[j])
+                + ThermoParams::at_penalty(&seq1[ii], &seq2[jj]);
+        }
+    } else if loop_size_1 == 1 && loop_size_2 == 1 {
+        thermo = Thermo::new();
+        let stack_thermo_1 = params.get_stack(&[seq1[i], seq1[i + 1]], &[seq2[j], seq2[j + 1]])?;
+        let stack_thermo_2 =
+            params.get_stack(&[seq2[jj], seq2[jj - 1]], &[seq1[ii], seq1[ii - 1]])?;
+
+        if let Some(t) = stack_thermo_1
+            && f64::is_finite(t.dh)
+        {
+            thermo += t;
+        }
+        if let Some(t) = stack_thermo_2
+            && f64::is_finite(t.dh)
+        {
+            thermo += t;
+        }
+    } else {
+        if !is_base_pair(&seq1[ii - 1], &seq2[jj - 1]) && !is_base_pair(&seq1[i + 1], &seq2[j + 1])
+        {
+            thermo = Thermo::new();
+            let internal_thermo = params.get_internal(loop_size);
+            let tstack_thermo_1 =
+                params.get_tstack(&[seq1[i], seq1[i + 1]], &[seq2[j], seq2[j + 1]])?;
+            let tstack_thermo_2 =
+                params.get_tstack(&[seq2[jj], seq2[jj - 1]], &[seq1[ii], seq1[ii - 1]])?;
+
+            if let Some(t) = internal_thermo
+                && f64::is_finite(t.dh)
+            {
+                thermo += t;
+            }
+            if let Some(t) = tstack_thermo_1
+                && f64::is_finite(t.dh)
+            {
+                thermo += t;
+            }
+            if let Some(t) = tstack_thermo_2
+                && f64::is_finite(t.dh)
+            {
+                thermo += t;
+            }
+            let internal_thermo = ThermoParams::internal_loop(
+                (loop_size_1 as i8 - loop_size_2 as i8).unsigned_abs() as usize,
+            );
+            if f64::is_finite(internal_thermo.dh) {
+                thermo += internal_thermo;
+            }
+        }
+    }
+
+    Ok(Some(thermo))
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -156,15 +242,19 @@ mod tests {
         assert!(mat.get(10, 10).is_err());
     }
 
-    #[test]
-    fn test_lsh() {
+    fn get_thermo_params() -> ThermoParams {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("thermo");
         let path = path.to_str().expect("path error").to_owned();
 
         let params = ThermoParams::with_file_path(&path);
         assert!(params.is_ok());
-        let params = params.unwrap();
+        params.unwrap()
+    }
+
+    #[test]
+    fn test_lsh() {
+        let params = get_thermo_params();
 
         let seq1 = "NCCCCCATCCGATCAGGGGGN".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
@@ -189,13 +279,7 @@ mod tests {
 
     #[test]
     fn test_rsh() {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("thermo");
-        let path = path.to_str().expect("path error").to_owned();
-
-        let params = ThermoParams::with_file_path(&path);
-        assert!(params.is_ok());
-        let params = params.unwrap();
+        let params = get_thermo_params();
 
         let seq1 = "NCCCCCATCCGATCAGGGGGN".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
@@ -215,6 +299,47 @@ mod tests {
         assert_eq!(
             rsh(&seq1, &seq2, 7, 14, &params),
             Ok(Some(Thermo::with_values(25.1, 7200.0)))
+        );
+    }
+
+    #[test]
+    fn test_get_internal_thermo() {
+        let params = get_thermo_params();
+
+        let seq1 = "NCCCCCATCCGATCAGGGGGN".as_bytes().to_vec();
+        let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
+
+        assert_eq!(
+            get_internal_thermo(1, 2, 2, 4, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-32.79, -8000.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(1, 2, 2, 10, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-11.92, 0.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(1, 5, 4, 10, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-35.91454779945188, -7700.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(16, 18, 19, 19, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-9.35, 0.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(18, 15, 19, 19, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-9.99, 0.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(15, 16, 19, 19, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_inf()))
+        );
+        assert_eq!(
+            get_internal_thermo(18, 12, 19, 19, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-11.28, 0.0)))
+        );
+        assert_eq!(
+            get_internal_thermo(3, 1, 4, 10, &seq1, &seq2, &params),
+            Ok(Some(Thermo::with_values(-12.57, 0.0)))
         );
     }
 }
