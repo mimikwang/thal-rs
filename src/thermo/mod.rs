@@ -56,6 +56,15 @@ impl Thermo {
     pub fn dg(&self) -> f64 {
         self.dg_with_temp(293.0)
     }
+
+    /// Add if the rhs has finite enthalpy
+    pub fn add_finite(&mut self, rhs: Option<Self>) {
+        if let Some(t) = rhs
+            && f64::is_finite(t.dh)
+        {
+            *self += t;
+        }
+    }
 }
 
 impl std::ops::Add for Thermo {

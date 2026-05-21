@@ -97,7 +97,7 @@ pub fn fill_matrix(
                 if is_base_pair(&seq1[i - 1], &seq2[j - 1]) {
                     let mut thermo = mat.get(i - 1, j - 1)?;
                     let stack_thermo =
-                        params.get_stack(&[seq1[i - 1], seq1[i]], &[seq2[j - 1], seq2[j]])?;
+                        params.get_stack(&seq1[i - 1..=i], &[seq2[j - 1], seq2[j]])?;
                     if let Some(t) = stack_thermo {
                         thermo += t;
                     }
@@ -136,7 +136,7 @@ pub fn fill_matrix(
                             if internal_thermo.dg() < best_thermo.dg() {
                                 best_thermo = internal_thermo;
                                 if mat.get(i, j)? != internal_thermo {
-                                    traceback_mat.set(i, j, (ii as i8, jj as i8))?;
+                                    traceback_mat.set(i, j, (ii, jj))?;
                                 }
                                 mat.set(i, j, internal_thermo)?;
                             }
@@ -201,11 +201,6 @@ fn get_terminal_thermo(
     let b11 = seq1[1];
     let b20 = seq2[0];
     let b21 = seq2[1];
-
-    // If b11 and b21 are base pairs
-    if !is_base_pair(&b10, &b20) {
-        return Ok(None);
-    }
 
     // Get the at penalty
     let at_penalty_thermo = ThermoParams::at_penalty(&b10, &b20);
@@ -326,9 +321,8 @@ fn get_internal_thermo(
             {
                 thermo += t;
             }
-            let internal_thermo = ThermoParams::internal_loop(
-                (loop_size_1 as i8 - loop_size_2 as i8).unsigned_abs() as usize,
-            );
+            let internal_thermo =
+                ThermoParams::internal_loop((loop_size_1 - loop_size_2).unsigned_abs() as usize);
             if f64::is_finite(internal_thermo.dh) {
                 thermo += internal_thermo;
             }

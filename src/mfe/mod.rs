@@ -1,9 +1,14 @@
+pub(crate) mod calc;
+pub(crate) mod common;
+mod dimer;
+
 use crate::{
     errors::Result,
     matrix::Matrix,
     seq::is_base_pair,
     thermo::{Thermo, lowest_dg, params::ThermoParams},
 };
+pub use dimer::Dimer;
 
 /// Minimum free energy calculator based on zuker's algorithm
 ///
