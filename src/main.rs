@@ -1,4 +1,4 @@
-use crate::{errors::Result, mfe::Mfe, thermo::params::ThermoParams};
+use crate::{errors::Result, mfe::Dimer, thermo::params::ThermoParams};
 
 mod errors;
 mod matrix;
@@ -9,12 +9,8 @@ mod thermo;
 
 fn main() -> Result<()> {
     let params = ThermoParams::with_file_path("thermo")?;
-    let mut mfe = Mfe::new(
-        vec![b'A', b'G', b'C', b'T'],
-        vec![b'T', b'C', b'G', b'A'],
-        params,
-    );
-    mfe.calculate()?;
+    let mut mfe = Dimer::new(b"AGCT", b"TCGA", &params)?;
+    println!("{:?}", mfe.calculate()?);
 
     Ok(())
 }
