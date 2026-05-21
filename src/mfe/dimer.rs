@@ -72,7 +72,7 @@ impl<'a> Dimer<'a> {
             for j in 1..self.seq2.len() {
                 if is_base_pair(&self.seq1[i], &self.seq2[j]) {
                     let current = self.mat.get(i, j)?
-                        + Thermo::with_values(-5.7, 200.0)
+                        + Thermo::init_duplex()
                         + self.right_optimal_terminal(i, j)?;
 
                     if current.dg() < thermo.dg() {

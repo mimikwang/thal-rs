@@ -42,6 +42,14 @@ impl Thermo {
         }
     }
 
+    /// Duplex
+    pub fn init_duplex() -> Self {
+        Self {
+            ds: -5.7,
+            dh: 200.0,
+        }
+    }
+
     /// Construct with values
     pub fn with_values(ds: f64, dh: f64) -> Self {
         Self { ds, dh }
