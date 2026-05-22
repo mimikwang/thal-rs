@@ -13,6 +13,7 @@ pub struct ThermoParams {
     stack: HashMap<String, Thermo>,
     stack_mm: HashMap<String, Thermo>,
     tstack: HashMap<String, Thermo>,
+    triloop: HashMap<String, Thermo>,
     tetraloop: HashMap<String, Thermo>,
     dangle: HashMap<String, Thermo>,
     loops: Loops,
@@ -45,6 +46,7 @@ impl ThermoParams {
             stack: loader::load_stack(file_path)?,
             stack_mm: loader::load_stack_mm(file_path)?,
             tstack: loader::load_tstack(file_path)?,
+            triloop: loader::load_triloop(file_path)?,
             tetraloop: loader::load_tetraloop(file_path)?,
             dangle: loader::load_dangle(file_path)?,
             loops: loader::load_loops(file_path)?,
@@ -55,6 +57,14 @@ impl ThermoParams {
     get_param!(get_stack_mm, stack_mm);
     get_param!(get_tstack, tstack);
     get_param!(get_dangle, dangle);
+
+    pub fn get_triloop(&self, bases: &[u8]) -> Result<Option<Thermo>> {
+        let lookup = u8_to_string(bases)?;
+        let Some(thermo) = self.triloop.get(&lookup) else {
+            return Ok(None);
+        };
+        Ok(Some(thermo.to_owned()))
+    }
 
     pub fn get_tetraloop(&self, bases: &[u8]) -> Result<Option<Thermo>> {
         let lookup = u8_to_string(bases)?;
