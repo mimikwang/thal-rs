@@ -18,6 +18,8 @@ const DANGLE_DH: &str = "dangle.dh";
 const DANGLE_DS: &str = "dangle.ds";
 const LOOPS_DH: &str = "loops.dh";
 const LOOPS_DS: &str = "loops.ds";
+const TRILOOP_DH: &str = "triloop.dh";
+const TRILOOP_DS: &str = "triloop.ds";
 const TETRALOOP_DH: &str = "tetraloop.dh";
 const TETRALOOP_DS: &str = "tetraloop.ds";
 
@@ -45,6 +47,7 @@ data_fn!(load_stack, STACK_DS, STACK_DH);
 data_fn!(load_stack_mm, STACKMM_DS, STACKMM_DH);
 data_fn!(load_tstack, TSTACK_DS, TSTACK_DH);
 data_fn!(load_dangle, DANGLE_DS, DANGLE_DH);
+data_fn!(load_triloop, TRILOOP_DS, TRILOOP_DH);
 data_fn!(load_tetraloop, TETRALOOP_DS, TETRALOOP_DH);
 
 pub fn load_loops(file_path: &str) -> Result<Loops> {
