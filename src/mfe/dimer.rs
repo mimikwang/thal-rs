@@ -2,7 +2,7 @@ use crate::{
     errors::Result,
     matrix::Matrix,
     mfe::{calc::ThermoCalc, common},
-    seq::is_base_pair,
+    seq::{is_base_pair_num, seq_to_num},
     thermo::{Thermo, params::ThermoParams},
 };
 
@@ -13,6 +13,8 @@ pub struct Dimer<'a> {
     traceback: Matrix<(i8, i8)>,
     seq1: Vec<u8>,
     seq2: Vec<u8>,
+    seq1_num: Vec<u8>,
+    seq2_num: Vec<u8>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
     max_loop: usize,
@@ -24,14 +26,18 @@ impl<'a> Dimer<'a> {
         let mut seq2 = seq2.to_vec();
         common::pad_seq(&mut seq1);
         common::pad_seq(&mut seq2);
+        let seq1_num = seq_to_num(&seq1);
+        let seq2_num = seq_to_num(&seq2);
 
-        let mat = Self::init_matrix(&seq1, &seq2)?;
+        let mat = Self::init_matrix(&seq1_num, &seq2_num)?;
 
         Ok(Self {
             mat,
             traceback: Self::init_traceback(seq1.len(), seq2.len()),
             seq1,
             seq2,
+            seq1_num,
+            seq2_num,
             thermo_calc: ThermoCalc::new(params),
             params,
             max_loop: 30,
@@ -43,13 +49,13 @@ impl<'a> Dimer<'a> {
         self.find_best()
     }
 
-    fn init_matrix(seq1: &[u8], seq2: &[u8]) -> Result<Matrix<Thermo>> {
-        let mut mat = Matrix::new(seq1.len(), seq2.len());
+    fn init_matrix(seq1_num: &[u8], seq2_num: &[u8]) -> Result<Matrix<Thermo>> {
+        let mut mat = Matrix::new(seq1_num.len(), seq2_num.len());
 
         // Fill based on base pairings
-        for (i, b1) in seq1.iter().enumerate().take(seq1.len() - 1).skip(1) {
-            for (j, b2) in seq2.iter().enumerate().take(seq2.len() - 1).skip(1) {
-                if is_base_pair(b1, b2) {
+        for (i, b1) in seq1_num.iter().enumerate().take(seq1_num.len() - 1).skip(1) {
+            for (j, b2) in seq2_num.iter().enumerate().take(seq2_num.len() - 1).skip(1) {
+                if is_base_pair_num(b1, b2) {
                     mat.set(i, j, Thermo::init_base_pairs())?;
                 } else {
                     mat.set(i, j, Thermo::init_not_base_pairs())?;
@@ -70,7 +76,7 @@ impl<'a> Dimer<'a> {
 
         for i in 1..self.seq1.len() {
             for j in 1..self.seq2.len() {
-                if is_base_pair(&self.seq1[i], &self.seq2[j]) {
+                if is_base_pair_num(&self.seq1_num[i], &self.seq2_num[j]) {
                     let current = self.mat.get(i, j)?
                         + Thermo::init_duplex()
                         + self.right_optimal_terminal(i, j)?;
@@ -83,7 +89,7 @@ impl<'a> Dimer<'a> {
             }
         }
 
-        if is_base_pair(&self.seq1[best.0], &self.seq2[best.1]) {
+        if is_base_pair_num(&self.seq1_num[best.0], &self.seq2_num[best.1]) {
             thermo = self.mat.get(best.0, best.1)?
                 + Thermo::init_duplex()
                 + self.right_optimal_terminal(best.0, best.1)?;
@@ -95,7 +101,7 @@ impl<'a> Dimer<'a> {
     fn fill(&mut self) -> Result<()> {
         for i in 1..self.seq1.len() {
             for j in 1..self.seq2.len() {
-                if !is_base_pair(&self.seq1[i], &self.seq2[j]) {
+                if !is_base_pair_num(&self.seq1_num[i], &self.seq2_num[j]) {
                     self.mat.set(i, j, Thermo::with_inf())?;
                     continue;
                 }
@@ -112,7 +118,7 @@ impl<'a> Dimer<'a> {
     }
 
     fn fill_stack(&mut self, i: usize, j: usize) -> Result<()> {
-        if is_base_pair(&self.seq1[i - 1], &self.seq2[j - 1]) {
+        if is_base_pair_num(&self.seq1_num[i - 1], &self.seq2_num[j - 1]) {
             let mut stack = self.mat.get(i - 1, j - 1)?;
             stack.add_finite(
                 self.params
@@ -130,7 +136,7 @@ impl<'a> Dimer<'a> {
         for d in 3..self.max_loop + 3 {
             let (mut ii, mut jj) = Self::get_loop_indices(i, j, d);
             while ii > 0 && jj < j as i8 {
-                if is_base_pair(&self.seq1[ii as usize], &self.seq2[jj as usize]) {
+                if is_base_pair_num(&self.seq1_num[ii as usize], &self.seq2_num[jj as usize]) {
                     let internal = self.mat.get(ii as usize, jj as usize)?
                         + self
                             .thermo_calc
