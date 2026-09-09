@@ -14,7 +14,6 @@ const MAX_HAIRPIN_LOOP: usize = 30;
 pub struct Monomer<'a> {
     mat: Matrix<Thermo>,
     traceback: Matrix<(i8, i8)>,
-    seq: Vec<u8>,
     seq_num: Vec<usize>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
@@ -32,7 +31,6 @@ impl<'a> Monomer<'a> {
         Ok(Self {
             mat,
             traceback: Self::init_traceback(seq.len()),
-            seq,
             seq_num,
             thermo_calc: ThermoCalc::new(params),
             params,
@@ -46,7 +44,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn find_best(&self) -> Result<Thermo> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
         let mut thermo = Thermo::with_inf();
 
         for i in 1..=oligo_len {
@@ -64,7 +62,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn fill(&mut self) -> Result<()> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
 
         for j in 2..=oligo_len {
             if j < MIN_HAIRPIN_LOOP + 2 {
@@ -102,7 +100,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn fill_loop(&mut self, i: usize, j: usize) -> Result<()> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
         let mut d = j as i64 - i as i64 - 3;
         let lower_bound =
             (MIN_HAIRPIN_LOOP as i64 + 1).max(j as i64 - i as i64 - 2 - self.max_loop as i64);
@@ -232,7 +230,7 @@ impl<'a> Monomer<'a> {
             return Ok(thermo);
         }
 
-        let seq_len = self.seq.len();
+        let seq_len = self.seq_num.len();
         if i <= seq_len && seq_len < j {
             return Ok(thermo);
         } else if i > seq_len {

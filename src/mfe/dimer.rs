@@ -11,8 +11,6 @@ use crate::{
 pub struct Dimer<'a> {
     mat: Matrix<Thermo>,
     traceback: Matrix<(i8, i8)>,
-    seq1: Vec<u8>,
-    seq2: Vec<u8>,
     seq1_num: Vec<usize>,
     seq2_num: Vec<usize>,
     thermo_calc: ThermoCalc<'a>,
@@ -34,8 +32,6 @@ impl<'a> Dimer<'a> {
         Ok(Self {
             mat,
             traceback: Self::init_traceback(seq1.len(), seq2.len()),
-            seq1,
-            seq2,
             seq1_num,
             seq2_num,
             thermo_calc: ThermoCalc::new(params),
@@ -74,8 +70,8 @@ impl<'a> Dimer<'a> {
         let mut best = (1, 1);
         let mut thermo = Thermo::with_inf();
 
-        for i in 1..self.seq1.len() {
-            for j in 1..self.seq2.len() {
+        for i in 1..self.seq1_num.len() {
+            for j in 1..self.seq2_num.len() {
                 if is_base_pair_num(&self.seq1_num[i], &self.seq2_num[j]) {
                     let current = self.mat.get(i, j)?
                         + Thermo::init_duplex()
@@ -99,8 +95,8 @@ impl<'a> Dimer<'a> {
     }
 
     fn fill(&mut self) -> Result<()> {
-        for i in 1..self.seq1.len() {
-            for j in 1..self.seq2.len() {
+        for i in 1..self.seq1_num.len() {
+            for j in 1..self.seq2_num.len() {
                 if !is_base_pair_num(&self.seq1_num[i], &self.seq2_num[j]) {
                     self.mat.set(i, j, Thermo::with_inf())?;
                     continue;
