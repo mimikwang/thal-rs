@@ -183,25 +183,13 @@ impl<'a> Dimer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
-
-    fn get_params() -> ThermoParams {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("thermo");
-        let path = path.to_str().expect("path error").to_owned();
-
-        let params = ThermoParams::with_file_path(&path);
-        assert!(params.is_ok());
-        params.unwrap()
-    }
 
     #[test]
     fn test_new() {
         let seq1 = &[b'A', b'T', b'C', b'G'];
         let seq2 = &[b'A', b'A'];
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
 
         let dimer = Dimer::new(seq1, seq2, &params);
         assert!(dimer.is_ok());
@@ -215,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_calculate() {
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
         let seq1 = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
         let dimer = Dimer::new(&seq1, &seq2, &params);
@@ -231,7 +219,7 @@ mod tests {
     fn test_fill() {
         let seq1 = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
 
         let dimer = Dimer::new(&seq1, &seq2, &params);
         assert!(dimer.is_ok());
@@ -296,7 +284,7 @@ mod tests {
     fn test_left_optimal_terminal() {
         let seq1 = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
 
         let dimer = Dimer::new(&seq1, &seq2, &params);
         assert!(dimer.is_ok());
@@ -321,7 +309,7 @@ mod tests {
     fn test_right_optimal_terminal() {
         let seq1 = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
 
         let dimer = Dimer::new(&seq1, &seq2, &params);
         assert!(dimer.is_ok());

@@ -41,6 +41,18 @@ macro_rules! get_loop {
 }
 
 impl ThermoParams {
+    pub fn with_defaults() -> Result<Self> {
+        Ok(Self {
+            stack: loader::default_stack()?,
+            stack_mm: loader::default_stack_mm()?,
+            tstack: loader::default_tstack()?,
+            triloop: loader::default_triloop()?,
+            tetraloop: loader::default_tetraloop()?,
+            dangle: loader::default_dangle()?,
+            loops: loader::default_loops()?,
+        })
+    }
+
     pub fn with_file_path(file_path: &str) -> Result<Self> {
         Ok(Self {
             stack: loader::load_stack(file_path)?,

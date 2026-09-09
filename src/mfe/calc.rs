@@ -174,23 +174,11 @@ impl<'a> ThermoCalc<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
-
-    fn get_thermo_params() -> ThermoParams {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("thermo");
-        let path = path.to_str().expect("path error").to_owned();
-
-        let params = ThermoParams::with_file_path(&path);
-        assert!(params.is_ok());
-        params.unwrap()
-    }
 
     #[test]
     fn test_optimal_internal() {
-        let params = get_thermo_params();
+        let params = ThermoParams::with_defaults().unwrap();
         let thermo_calc = ThermoCalc::new(&params);
         let seq1 = "NCCCCCATCCGATCAGGGGGN".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
@@ -224,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_optimal_terminal() {
-        let params = get_thermo_params();
+        let params = ThermoParams::with_defaults().unwrap();
         let thermo_calc = ThermoCalc::new(&params);
 
         macro_rules! run_test {

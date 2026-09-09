@@ -263,23 +263,11 @@ impl<'a> Monomer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
-
-    fn get_params() -> ThermoParams {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("thermo");
-        let path = path.to_str().expect("path error").to_owned();
-
-        let params = ThermoParams::with_file_path(&path);
-        assert!(params.is_ok());
-        params.unwrap()
-    }
 
     #[test]
     fn test_hairpin() {
-        let params = get_params();
+        let params = ThermoParams::with_defaults().unwrap();
         let seq = "CCCCCATCCGATCAGGGGG".as_bytes().to_vec();
         let monomer = Monomer::new(&seq, &params);
         assert!(monomer.is_ok());
