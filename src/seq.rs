@@ -41,21 +41,6 @@ pub fn is_base_pair(b1: &u8, b2: &u8) -> bool {
     false
 }
 
-/// Check to see if bases are WC pairs
-pub fn is_base_pairs(b1: &[u8], b2: &[u8]) -> bool {
-    if b1.len() != b2.len() {
-        return false;
-    }
-
-    for (bb1, bb2) in b1.iter().zip(b2.iter()) {
-        if !is_base_pair(bb1, bb2) {
-            return false;
-        }
-    }
-
-    true
-}
-
 /// Convert bases to number where
 ///
 /// A --> 0
@@ -73,20 +58,6 @@ pub fn is_base_pair_num(b1: &u8, b2: &u8) -> bool {
     BASE_PAIR_LUT[*b1 as usize][*b2 as usize]
 }
 
-pub fn is_base_pairs_num(b1: &[u8], b2: &[u8]) -> bool {
-    if b1.len() != b2.len() {
-        return false;
-    }
-
-    for (bb1, bb2) in b1.iter().zip(b2.iter()) {
-        if !is_base_pair_num(bb1, bb2) {
-            return false;
-        }
-    }
-
-    true
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,18 +70,6 @@ mod tests {
         assert!(is_base_pair(&b'G', &b'C'));
         assert!(!is_base_pair(&b'T', &b'T'));
         assert!(!is_base_pair(&b'G', &b'T'));
-    }
-
-    #[test]
-    fn test_is_base_pairs() {
-        assert!(is_base_pairs(
-            &[b'T', b'A', b'C', b'G'],
-            &[b'A', b'T', b'G', b'C']
-        ));
-        assert!(!is_base_pairs(
-            &[b'T', b'A', b'C', b'G'],
-            &[b'A', b'T', b'G', b'G']
-        ));
     }
 
     #[test]
@@ -129,12 +88,5 @@ mod tests {
         assert!(is_base_pair_num(&1, &2));
         assert!(!is_base_pair_num(&0, &0));
         assert!(!is_base_pair_num(&4, &4));
-    }
-
-    #[test]
-    fn test_is_base_pairs_num() {
-        assert!(is_base_pairs_num(&[3, 0, 1, 2], &[0, 3, 2, 1]));
-        assert!(!is_base_pairs_num(&[3, 0, 1, 2], &[3, 0, 1, 2]));
-        assert!(!is_base_pairs_num(&[3, 0], &[0, 3, 3]));
     }
 }
