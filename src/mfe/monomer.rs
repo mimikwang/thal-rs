@@ -15,7 +15,7 @@ pub struct Monomer<'a> {
     mat: Matrix<Thermo>,
     traceback: Matrix<(i8, i8)>,
     seq: Vec<u8>,
-    seq_num: Vec<u8>,
+    seq_num: Vec<usize>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
     max_loop: usize,
@@ -86,10 +86,12 @@ impl<'a> Monomer<'a> {
 
     fn fill_stack(&mut self, i: usize, j: usize) -> Result<()> {
         let mut stack = self.mat.get(i + 1, j - 1)?;
-        stack.add_finite(
-            self.params
-                .get_stack(&self.seq[i..=i + 1], &[self.seq[j], self.seq[j - 1]])?,
-        );
+        stack.add_finite(Some(self.params.get_stack_fast(
+            self.seq_num[i],
+            self.seq_num[i + 1],
+            self.seq_num[j],
+            self.seq_num[j - 1],
+        )));
 
         if stack.dg() < self.mat.get(i, j)?.dg() {
             self.mat.set(i, j, stack)?;
@@ -141,37 +143,47 @@ impl<'a> Monomer<'a> {
             thermo.add_finite(self.params.get_bulge(loop_size as usize));
 
             if loop_size_1 == 1 || loop_size_2 == 1 {
-                thermo.add_finite(
-                    self.params
-                        .get_stack(&[self.seq[i], self.seq[ii]], &[self.seq[j], self.seq[jj]])?,
-                );
+                thermo.add_finite(Some(self.params.get_stack_fast(
+                    self.seq_num[i],
+                    self.seq_num[ii],
+                    self.seq_num[j],
+                    self.seq_num[jj],
+                )));
             } else {
-                thermo += ThermoParams::at_penalty(&self.seq[i], &self.seq[j])
-                    + ThermoParams::at_penalty(&self.seq[ii], &self.seq[jj]);
+                thermo += ThermoParams::at_penalty_num(self.seq_num[i], self.seq_num[j])
+                    + ThermoParams::at_penalty_num(self.seq_num[ii], self.seq_num[jj]);
             }
         } else if loop_size_1 == 1 && loop_size_2 == 1 {
             thermo = Thermo::new();
-            thermo.add_finite(
-                self.params
-                    .get_stack_mm(&self.seq[i..=i + 1], &[self.seq[j], self.seq[j - 1]])?,
-            );
-            thermo.add_finite(self.params.get_stack_mm(
-                &[self.seq[jj], self.seq[jj + 1]],
-                &[self.seq[ii], self.seq[ii - 1]],
-            )?);
+            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+                self.seq_num[i],
+                self.seq_num[i + 1],
+                self.seq_num[j],
+                self.seq_num[j - 1],
+            )));
+            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+                self.seq_num[jj],
+                self.seq_num[jj + 1],
+                self.seq_num[ii],
+                self.seq_num[ii - 1],
+            )));
         } else if !is_base_pair_num(&self.seq_num[ii - 1], &self.seq_num[jj + 1])
             && !is_base_pair_num(&self.seq_num[i + 1], &self.seq_num[j - 1])
         {
             thermo = Thermo::new();
             thermo.add_finite(self.params.get_internal(loop_size as usize));
-            thermo.add_finite(
-                self.params
-                    .get_tstack(&self.seq[i..=i + 1], &[self.seq[j], self.seq[j - 1]])?,
-            );
-            thermo.add_finite(self.params.get_tstack(
-                &[self.seq[jj], self.seq[jj + 1]],
-                &[self.seq[ii], self.seq[ii - 1]],
-            )?);
+            thermo.add_finite(Some(self.params.get_tstack_fast(
+                self.seq_num[i],
+                self.seq_num[i + 1],
+                self.seq_num[j],
+                self.seq_num[j - 1],
+            )));
+            thermo.add_finite(Some(self.params.get_tstack_fast(
+                self.seq_num[jj],
+                self.seq_num[jj + 1],
+                self.seq_num[ii],
+                self.seq_num[ii - 1],
+            )));
 
             let asym =
                 ThermoParams::internal_loop((loop_size_1 - loop_size_2).unsigned_abs() as usize);
@@ -189,7 +201,7 @@ impl<'a> Monomer<'a> {
         Ok(())
     }
 
-    fn init_matrix(seq_num: &[u8]) -> Result<Matrix<Thermo>> {
+    fn init_matrix(seq_num: &[usize]) -> Result<Matrix<Thermo>> {
         let mut mat = Matrix::new(seq_num.len(), seq_num.len());
         for i in 1..seq_num.len() {
             for j in 1..seq_num.len() {
@@ -236,16 +248,31 @@ impl<'a> Monomer<'a> {
         }
 
         if loop_size > MIN_HAIRPIN_LOOP {
-            thermo.add_finite(
-                self.params
-                    .get_tstack(&self.seq[i..=i + 1], &[self.seq[j], self.seq[j - 1]])?,
-            );
+            thermo.add_finite(Some(self.params.get_tstack_fast(
+                self.seq_num[i],
+                self.seq_num[i + 1],
+                self.seq_num[j],
+                self.seq_num[j - 1],
+            )));
             if loop_size == 4 {
-                thermo.add_finite(self.params.get_tetraloop(&self.seq[i..i + 6])?);
+                thermo.add_finite(Some(self.params.get_tetraloop_fast(
+                    self.seq_num[i],
+                    self.seq_num[i + 1],
+                    self.seq_num[i + 2],
+                    self.seq_num[i + 3],
+                    self.seq_num[i + 4],
+                    self.seq_num[i + 5],
+                )))
             }
         } else if loop_size == MIN_HAIRPIN_LOOP {
-            thermo += ThermoParams::at_penalty(&self.seq[i], &self.seq[j]);
-            thermo.add_finite(self.params.get_triloop(&self.seq[i..i + 5])?);
+            thermo += ThermoParams::at_penalty_num(self.seq_num[i], self.seq_num[j]);
+            thermo.add_finite(Some(self.params.get_triloop_fast(
+                self.seq_num[i],
+                self.seq_num[i + 1],
+                self.seq_num[i + 2],
+                self.seq_num[i + 3],
+                self.seq_num[i + 4],
+            )));
         }
 
         let thermo_current = self.mat.get(i, j)?;

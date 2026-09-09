@@ -3,13 +3,13 @@ const G: u8 = b'G';
 const C: u8 = b'C';
 const T: u8 = b'T';
 
-const A_NUM: u8 = 0;
-const G_NUM: u8 = 1;
-const C_NUM: u8 = 2;
-const T_NUM: u8 = 3;
-const N_NUM: u8 = 4;
+pub const A_NUM: usize = 0;
+pub const G_NUM: usize = 1;
+pub const C_NUM: usize = 2;
+pub const T_NUM: usize = 3;
+pub const N_NUM: usize = 4;
 
-const BASE_LUT: [u8; 256] = {
+const BASE_LUT: [usize; 256] = {
     let mut table = [N_NUM; 256];
     table[A as usize] = A_NUM;
     table[C as usize] = C_NUM;
@@ -50,11 +50,16 @@ pub fn is_base_pair(b1: &u8, b2: &u8) -> bool {
 ///
 /// And anything else is 4. This helps with building fast lookups instead of using a hashmap for
 /// with strings as keys. We can use an array lookup instead.
-pub fn seq_to_num(seq: &[u8]) -> Vec<u8> {
+pub fn seq_to_num(seq: &[u8]) -> Vec<usize> {
     seq.iter().map(|&b| BASE_LUT[b as usize]).collect()
 }
 
-pub fn is_base_pair_num(b1: &u8, b2: &u8) -> bool {
+/// Convert a single base to its numeric code (see `seq_to_num`)
+pub fn base_to_num(b: u8) -> usize {
+    BASE_LUT[b as usize]
+}
+
+pub fn is_base_pair_num(b1: &usize, b2: &usize) -> bool {
     BASE_PAIR_LUT[*b1 as usize][*b2 as usize]
 }
 
