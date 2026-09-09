@@ -1,0 +1,12 @@
+[package]
+name = "thal-py"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "thal_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+thal-rs = { path = ".." }
+pyo3 = { version = "0.29", features = ["extension-module"] }

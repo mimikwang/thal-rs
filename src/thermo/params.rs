@@ -11,32 +11,32 @@ include!(concat!(env!("OUT_DIR"), "/gen_params.rs"));
 
 #[derive(Debug)]
 pub struct ThermoParams {
-    stack_array: [Thermo; 625],
-    stack_mm_array: [Thermo; 625],
-    tstack_array: [Thermo; 625],
-    dangle3_array: [Thermo; 125],
-    dangle5_array: [Thermo; 125],
-    triloop_array: [Thermo; 3125],
-    tetraloop_array: [Thermo; 15625],
+    stack_array: &'static [Thermo; 625],
+    stack_mm_array: &'static [Thermo; 625],
+    tstack_array: &'static [Thermo; 625],
+    dangle3_array: &'static [Thermo; 125],
+    dangle5_array: &'static [Thermo; 125],
+    triloop_array: &'static [Thermo; 3125],
+    tetraloop_array: &'static [Thermo; 15625],
 
-    internal_array: [Thermo; 30],
-    bulge_array: [Thermo; 30],
-    hairpin_array: [Thermo; 30],
+    internal_array: &'static [Thermo; 30],
+    bulge_array: &'static [Thermo; 30],
+    hairpin_array: &'static [Thermo; 30],
 }
 
 impl ThermoParams {
     pub fn with_defaults() -> Result<Self> {
         Ok(Self {
-            stack_array: STACK_ARRAY,
-            stack_mm_array: STACK_MM_ARRAY,
-            tstack_array: TSTACK_ARRAY,
-            dangle3_array: DANGLE3_ARRAY,
-            dangle5_array: DANGLE5_ARRAY,
-            triloop_array: TRILOOP_ARRAY,
-            tetraloop_array: TETRALOOP_ARRAY,
-            internal_array: INTERNAL_ARRAY,
-            bulge_array: BULGE_ARRAY,
-            hairpin_array: HAIRPIN_ARRAY,
+            stack_array: &STACK_ARRAY,
+            stack_mm_array: &STACK_MM_ARRAY,
+            tstack_array: &TSTACK_ARRAY,
+            dangle3_array: &DANGLE3_ARRAY,
+            dangle5_array: &DANGLE5_ARRAY,
+            triloop_array: &TRILOOP_ARRAY,
+            tetraloop_array: &TETRALOOP_ARRAY,
+            internal_array: &INTERNAL_ARRAY,
+            bulge_array: &BULGE_ARRAY,
+            hairpin_array: &HAIRPIN_ARRAY,
         })
     }
 
