@@ -1,16 +1,10 @@
 use std::env;
 
-use crate::{
+use thal_rs::{
     errors::Result,
     mfe::{Dimer, Monomer},
     thermo::params::ThermoParams,
 };
-
-mod errors;
-mod matrix;
-mod mfe;
-mod seq;
-mod thermo;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();

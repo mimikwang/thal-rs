@@ -1,0 +1,17 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "thal-rs"
+version = "0.1.0"
+description = "Python bindings for thal-rs, a Rust rewrite of primer3's thermal alignment module"
+requires-python = ">=3.9"
+
+[tool.maturin]
+module-name = "thal_rs"
+
+[dependency-groups]
+dev = [
+    "maturin>=1.9,<2.0",
+]
