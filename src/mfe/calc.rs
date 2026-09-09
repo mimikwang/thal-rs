@@ -1,6 +1,6 @@
 use crate::{
     errors::Result,
-    seq::is_base_pair,
+    seq::{N_NUM, is_base_pair_num},
     thermo::{Thermo, params::ThermoParams},
 };
 
@@ -26,17 +26,23 @@ impl<'a> ThermoCalc<'a> {
     ///    b21
     ///    /
     /// b20
-    pub fn optimal_terminal(&self, b10: u8, b11: u8, b20: u8, b21: u8) -> Result<Thermo> {
+    pub fn optimal_terminal(
+        &self,
+        b10: usize,
+        b11: usize,
+        b20: usize,
+        b21: usize,
+    ) -> Result<Thermo> {
         let mut thermo = self.get_terminal_stack(b10, b11, b20, b21)?;
 
-        if !is_base_pair(&b11, &b21) {
+        if !is_base_pair_num(&b11, &b21) {
             let dangle = self.get_dangle(b10, b11, b20, b21)?;
             if dangle.dg() < thermo.dg() {
                 thermo = dangle;
             }
         }
 
-        let at_penalty = ThermoParams::at_penalty(&b10, &b20);
+        let at_penalty = ThermoParams::at_penalty_num(b10, b20);
         if at_penalty.dg() < thermo.dg() {
             thermo = at_penalty;
         }
@@ -71,8 +77,8 @@ impl<'a> ThermoCalc<'a> {
         j: i8,
         ii: i8,
         jj: i8,
-        seq1: &[u8],
-        seq2: &[u8],
+        seq1_num: &[usize],
+        seq2_num: &[usize],
     ) -> Result<Thermo> {
         let loop_size_1 = ii - i - 1;
         let loop_size_2 = jj - j - 1;
@@ -83,43 +89,53 @@ impl<'a> ThermoCalc<'a> {
             thermo.add_finite(self.params.get_bulge(loop_size as usize));
 
             if loop_size_1 == 1 || loop_size_2 == 1 {
-                thermo.add_finite(self.params.get_stack(
-                    &[seq1[i as usize], seq1[ii as usize]],
-                    &[seq2[j as usize], seq2[jj as usize]],
-                )?);
+                thermo.add_finite(Some(self.params.get_stack_fast(
+                    seq1_num[i as usize],
+                    seq1_num[ii as usize],
+                    seq2_num[j as usize],
+                    seq2_num[jj as usize],
+                )));
             } else {
-                thermo += ThermoParams::at_penalty(&seq1[i as usize], &seq2[j as usize])
-                    + ThermoParams::at_penalty(&seq1[ii as usize], &seq2[jj as usize]);
+                thermo += ThermoParams::at_penalty_num(seq1_num[i as usize], seq2_num[j as usize])
+                    + ThermoParams::at_penalty_num(seq1_num[ii as usize], seq2_num[jj as usize]);
             }
             return Ok(thermo);
         }
 
         if loop_size_1 == 1 && loop_size_2 == 1 {
             let mut thermo = Thermo::new();
-            thermo.add_finite(self.params.get_stack_mm(
-                &seq1[i as usize..=i as usize + 1],
-                &seq2[j as usize..=j as usize + 1],
-            )?);
-            thermo.add_finite(self.params.get_stack_mm(
-                &[seq2[jj as usize], seq2[jj as usize - 1]],
-                &[seq1[ii as usize], seq1[ii as usize - 1]],
-            )?);
+            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+                seq1_num[i as usize],
+                seq1_num[i as usize + 1],
+                seq2_num[j as usize],
+                seq2_num[j as usize + 1],
+            )));
+            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+                seq2_num[jj as usize],
+                seq2_num[jj as usize - 1],
+                seq1_num[ii as usize],
+                seq1_num[ii as usize - 1],
+            )));
             return Ok(thermo);
         }
 
-        if !is_base_pair(&seq1[ii as usize - 1], &seq2[jj as usize - 1])
-            && !is_base_pair(&seq1[i as usize + 1], &seq2[j as usize + 1])
+        if !is_base_pair_num(&seq1_num[ii as usize - 1], &seq2_num[jj as usize - 1])
+            && !is_base_pair_num(&seq1_num[i as usize + 1], &seq2_num[j as usize + 1])
         {
             let mut thermo = Thermo::new();
             thermo.add_finite(self.params.get_internal(loop_size as usize));
-            thermo.add_finite(self.params.get_tstack(
-                &seq1[i as usize..=i as usize + 1],
-                &seq2[j as usize..=j as usize + 1],
-            )?);
-            thermo.add_finite(self.params.get_tstack(
-                &[seq2[jj as usize], seq2[jj as usize - 1]],
-                &[seq1[ii as usize], seq1[ii as usize - 1]],
-            )?);
+            thermo.add_finite(Some(self.params.get_tstack_fast(
+                seq1_num[i as usize],
+                seq1_num[i as usize + 1],
+                seq2_num[j as usize],
+                seq2_num[j as usize + 1],
+            )));
+            thermo.add_finite(Some(self.params.get_tstack_fast(
+                seq2_num[jj as usize],
+                seq2_num[jj as usize - 1],
+                seq1_num[ii as usize],
+                seq1_num[ii as usize - 1],
+            )));
 
             let t =
                 ThermoParams::internal_loop((loop_size_1 - loop_size_2).unsigned_abs() as usize);
@@ -136,9 +152,9 @@ impl<'a> ThermoCalc<'a> {
     /// Get the terminal stack thermo
     ///
     /// This is calculated by adding the AT penalty to the terminal stack look up values.
-    fn get_terminal_stack(&self, b10: u8, b11: u8, b20: u8, b21: u8) -> Result<Thermo> {
-        let mut thermo = ThermoParams::at_penalty(&b10, &b20);
-        thermo.add_finite(self.params.get_tstack(&[b10, b11], &[b20, b21])?);
+    fn get_terminal_stack(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Result<Thermo> {
+        let mut thermo = ThermoParams::at_penalty_num(b10, b20);
+        thermo.add_finite(Some(self.params.get_tstack_fast(b10, b11, b20, b21)));
         Ok(thermo)
     }
 
@@ -154,18 +170,18 @@ impl<'a> ThermoCalc<'a> {
     /// b20
     ///
     /// where b10 b11 is oriented as 5' --> 3' and b20 b21 is oriented as 3' <-- 5'
-    fn get_dangle(&self, b10: u8, b11: u8, b20: u8, b21: u8) -> Result<Thermo> {
-        let mut thermo = ThermoParams::at_penalty(&b10, &b20);
-        let dangle_3 = self.params.get_dangle(&[b10, b11], &[b20])?;
-        let dangle_5 = self.params.get_dangle(&[b10], &[b20, b21])?;
+    fn get_dangle(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Result<Thermo> {
+        let mut thermo = ThermoParams::at_penalty_num(b10, b20);
+        let dangle_3 = self.params.get_dangle3_fast(b10, b11, b20);
+        let dangle_5 = self.params.get_dangle5_fast(b10, b20, b21);
 
-        if b21 == b'N' {
-            thermo.add_finite(dangle_3);
-        } else if b11 == b'N' {
-            thermo.add_finite(dangle_5);
+        if b21 == N_NUM {
+            thermo.add_finite(Some(dangle_3));
+        } else if b11 == N_NUM {
+            thermo.add_finite(Some(dangle_5));
         } else {
-            thermo.add_finite(dangle_3);
-            thermo.add_finite(dangle_5);
+            thermo.add_finite(Some(dangle_3));
+            thermo.add_finite(Some(dangle_5));
         }
 
         Ok(thermo)
@@ -174,6 +190,8 @@ impl<'a> ThermoCalc<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::seq::seq_to_num;
+
     use super::*;
 
     #[test]
@@ -182,6 +200,8 @@ mod tests {
         let thermo_calc = ThermoCalc::new(&params);
         let seq1 = "NCCCCCATCCGATCAGGGGGN".as_bytes().to_vec();
         let seq2 = seq1.clone().into_iter().rev().collect::<Vec<u8>>();
+        let seq1 = seq_to_num(&seq1);
+        let seq2 = seq_to_num(&seq2);
 
         macro_rules! run_test {
             ($i:literal, $j:literal, $ii:literal, $jj:literal, $ds:literal, $dh:literal) => {
@@ -224,11 +244,11 @@ mod tests {
             };
         }
 
-        run_test!(b'C', b'A', b'G', b'G', -27.4, -9800.0);
-        run_test!(b'C', b'C', b'G', b'G', -19.3, -7000.0);
-        run_test!(b'T', b'C', b'A', b'G', -9.200000000000001, -3800.0);
-        run_test!(b'A', b'T', b'T', b'A', -6.699999999999999, -2800.0);
-        run_test!(b'G', b'N', b'C', b'C', -12.6, -4400.0);
-        run_test!(b'T', b'C', b'A', b'C', 25.1, 7200.0);
+        run_test!(2, 0, 1, 1, -27.4, -9800.0);
+        run_test!(2, 2, 1, 1, -19.3, -7000.0);
+        run_test!(3, 2, 0, 1, -9.200000000000001, -3800.0);
+        run_test!(0, 3, 3, 0, -6.699999999999999, -2800.0);
+        run_test!(1, 4, 2, 2, -12.6, -4400.0);
+        run_test!(3, 2, 0, 2, 25.1, 7200.0);
     }
 }

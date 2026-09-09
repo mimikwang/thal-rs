@@ -13,8 +13,8 @@ pub struct Dimer<'a> {
     traceback: Matrix<(i8, i8)>,
     seq1: Vec<u8>,
     seq2: Vec<u8>,
-    seq1_num: Vec<u8>,
-    seq2_num: Vec<u8>,
+    seq1_num: Vec<usize>,
+    seq2_num: Vec<usize>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
     max_loop: usize,
@@ -49,7 +49,7 @@ impl<'a> Dimer<'a> {
         self.find_best()
     }
 
-    fn init_matrix(seq1_num: &[u8], seq2_num: &[u8]) -> Result<Matrix<Thermo>> {
+    fn init_matrix(seq1_num: &[usize], seq2_num: &[usize]) -> Result<Matrix<Thermo>> {
         let mut mat = Matrix::new(seq1_num.len(), seq2_num.len());
 
         // Fill based on base pairings
@@ -120,10 +120,12 @@ impl<'a> Dimer<'a> {
     fn fill_stack(&mut self, i: usize, j: usize) -> Result<()> {
         if is_base_pair_num(&self.seq1_num[i - 1], &self.seq2_num[j - 1]) {
             let mut stack = self.mat.get(i - 1, j - 1)?;
-            stack.add_finite(
-                self.params
-                    .get_stack(&self.seq1[i - 1..=i], &self.seq2[j - 1..=j])?,
-            );
+            stack.add_finite(Some(self.params.get_stack_fast(
+                self.seq1_num[i - 1],
+                self.seq1_num[i],
+                self.seq2_num[j - 1],
+                self.seq2_num[j],
+            )));
             self.mat.set(i, j, stack)?;
             self.traceback.set(i, j, (i as i8 - 1, j as i8 - 1))?;
         }
@@ -138,9 +140,14 @@ impl<'a> Dimer<'a> {
             while ii > 0 && jj < j as i8 {
                 if is_base_pair_num(&self.seq1_num[ii as usize], &self.seq2_num[jj as usize]) {
                     let internal = self.mat.get(ii as usize, jj as usize)?
-                        + self
-                            .thermo_calc
-                            .optimal_internal(ii, jj, i as i8, j as i8, &self.seq1, &self.seq2)?;
+                        + self.thermo_calc.optimal_internal(
+                            ii,
+                            jj,
+                            i as i8,
+                            j as i8,
+                            &self.seq1_num,
+                            &self.seq2_num,
+                        )?;
 
                     if (internal + rsh).dg() < best.dg() {
                         best = internal + rsh;
@@ -160,19 +167,19 @@ impl<'a> Dimer<'a> {
 
     fn left_optimal_terminal(&self, i: usize, j: usize) -> Result<Thermo> {
         self.thermo_calc.optimal_terminal(
-            self.seq2[j],
-            self.seq2[j - 1],
-            self.seq1[i],
-            self.seq1[i - 1],
+            self.seq2_num[j],
+            self.seq2_num[j - 1],
+            self.seq1_num[i],
+            self.seq1_num[i - 1],
         )
     }
 
     fn right_optimal_terminal(&self, i: usize, j: usize) -> Result<Thermo> {
         self.thermo_calc.optimal_terminal(
-            self.seq1[i],
-            self.seq1[i + 1],
-            self.seq2[j],
-            self.seq2[j + 1],
+            self.seq1_num[i],
+            self.seq1_num[i + 1],
+            self.seq2_num[j],
+            self.seq2_num[j + 1],
         )
     }
 
