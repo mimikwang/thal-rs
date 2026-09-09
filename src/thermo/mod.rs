@@ -1,4 +1,3 @@
-mod loader;
 pub mod params;
 
 const MIN_ENTROPY: f64 = -3224.0;
