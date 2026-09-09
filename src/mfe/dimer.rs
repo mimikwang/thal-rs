@@ -84,7 +84,9 @@ impl<'a> Dimer<'a> {
         }
 
         if is_base_pair(&self.seq1[best.0], &self.seq2[best.1]) {
-            thermo = self.mat.get(best.0, best.1)? + self.right_optimal_terminal(best.0, best.1)?;
+            thermo = self.mat.get(best.0, best.1)?
+                + Thermo::init_duplex()
+                + self.right_optimal_terminal(best.0, best.1)?;
         }
 
         Ok(thermo)
@@ -123,7 +125,8 @@ impl<'a> Dimer<'a> {
     }
 
     fn fill_loop(&mut self, i: usize, j: usize) -> Result<()> {
-        let mut best = self.mat.get(i, j)? + self.right_optimal_terminal(i, j)?;
+        let rsh = self.right_optimal_terminal(i, j)?;
+        let mut best = self.mat.get(i, j)? + rsh;
         for d in 3..self.max_loop + 3 {
             let (mut ii, mut jj) = Self::get_loop_indices(i, j, d);
             while ii > 0 && jj < j as i8 {
@@ -133,8 +136,8 @@ impl<'a> Dimer<'a> {
                             .thermo_calc
                             .optimal_internal(ii, jj, i as i8, j as i8, &self.seq1, &self.seq2)?;
 
-                    if internal.dg() < best.dg() {
-                        best = internal;
+                    if (internal + rsh).dg() < best.dg() {
+                        best = internal + rsh;
                         if self.mat.get(i, j)? != internal {
                             self.traceback.set(i, j, (ii, jj))?;
                         }
@@ -221,7 +224,7 @@ mod tests {
 
         let res = dimer.calculate();
         assert!(res.is_ok());
-        assert_eq!(res, Ok(Thermo::with_values(-288.7836433983556, -101400.0)));
+        assert_eq!(res, Ok(Thermo::with_values(-294.4836433983556, -101200.0)));
     }
 
     #[test]
