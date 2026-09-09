@@ -47,7 +47,7 @@ data_fn!(load_stack, STACK_DS, STACK_DH);
 data_fn!(load_stack_mm, STACKMM_DS, STACKMM_DH);
 data_fn!(load_tstack, TSTACK_DS, TSTACK_DH);
 data_fn!(load_dangle, DANGLE_DS, DANGLE_DH);
-data_fn!(load_triloop, TRILOOP_DS, TETRALOOP_DH);
+data_fn!(load_triloop, TRILOOP_DS, TRILOOP_DH);
 data_fn!(load_tetraloop, TETRALOOP_DS, TETRALOOP_DH);
 
 pub fn load_loops(file_path: &str) -> Result<Loops> {
