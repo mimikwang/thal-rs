@@ -23,5 +23,5 @@ Right now, only dimer thermal alignment is available. Run the tool by running
 You should see the following:
 
 ```
-dg=-16786.39248428181 dh=-101400.0 ds=-288.7836433983556
+dg=-9865.89800000003 dh=-101200.0 ds=-294.4836433983556
 ```

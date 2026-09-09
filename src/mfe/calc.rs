@@ -36,6 +36,11 @@ impl<'a> ThermoCalc<'a> {
             }
         }
 
+        let at_penalty = ThermoParams::at_penalty(&b10, &b20);
+        if at_penalty.dg() < thermo.dg() {
+            thermo = at_penalty;
+        }
+
         Ok(thermo)
     }
 
@@ -84,7 +89,7 @@ impl<'a> ThermoCalc<'a> {
                 )?);
             } else {
                 thermo += ThermoParams::at_penalty(&seq1[i as usize], &seq2[j as usize])
-                    + ThermoParams::at_penalty(&seq2[ii as usize], &seq2[jj as usize]);
+                    + ThermoParams::at_penalty(&seq1[ii as usize], &seq2[jj as usize]);
             }
             return Ok(thermo);
         }
@@ -128,12 +133,27 @@ impl<'a> ThermoCalc<'a> {
         Ok(Thermo::with_inf())
     }
 
+    /// Get the terminal stack thermo
+    ///
+    /// This is calculated by adding the AT penalty to the terminal stack look up values.
     fn get_terminal_stack(&self, b10: u8, b11: u8, b20: u8, b21: u8) -> Result<Thermo> {
         let mut thermo = ThermoParams::at_penalty(&b10, &b20);
         thermo.add_finite(self.params.get_tstack(&[b10, b11], &[b20, b21])?);
         Ok(thermo)
     }
 
+    /// Get the dangle thermo
+    ///
+    /// The bases are arranged like so:
+    ///
+    /// b10
+    ///    \
+    ///    b11
+    ///    b21
+    ///    /
+    /// b20
+    ///
+    /// where b10 b11 is oriented as 5' --> 3' and b20 b21 is oriented as 3' <-- 5'
     fn get_dangle(&self, b10: u8, b11: u8, b20: u8, b21: u8) -> Result<Thermo> {
         let mut thermo = ThermoParams::at_penalty(&b10, &b20);
         let dangle_3 = self.params.get_dangle(&[b10, b11], &[b20])?;

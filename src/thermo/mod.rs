@@ -62,7 +62,7 @@ impl Thermo {
 
     /// Calculate the gibbs free energy
     pub fn dg(&self) -> f64 {
-        self.dg_with_temp(293.0)
+        self.dg_with_temp(310.15)
     }
 
     /// Add if the rhs has finite enthalpy
