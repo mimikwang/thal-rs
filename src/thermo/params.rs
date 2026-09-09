@@ -40,39 +40,32 @@ impl ThermoParams {
         })
     }
 
-    pub fn get_stack_fast(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
+    pub fn get_stack(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
         self.stack_array[quad_index(b10, b11, b20, b21)]
     }
 
-    pub fn get_stack_mm_fast(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
+    pub fn get_stack_mm(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
         self.stack_mm_array[quad_index(b10, b11, b20, b21)]
     }
 
-    pub fn get_tstack_fast(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
+    pub fn get_tstack(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Thermo {
         self.tstack_array[quad_index(b10, b11, b20, b21)]
     }
 
-    pub fn get_dangle3_fast(&self, b10: usize, b11: usize, b20: usize) -> Thermo {
+    pub fn get_dangle3(&self, b10: usize, b11: usize, b20: usize) -> Thermo {
         self.dangle3_array[triple_index(b10, b11, b20)]
     }
 
-    pub fn get_dangle5_fast(&self, b10: usize, b20: usize, b21: usize) -> Thermo {
+    pub fn get_dangle5(&self, b10: usize, b20: usize, b21: usize) -> Thermo {
         self.dangle5_array[triple_index(b10, b20, b21)]
     }
 
-    pub fn get_triloop_fast(
-        &self,
-        b0: usize,
-        b1: usize,
-        b2: usize,
-        b3: usize,
-        b4: usize,
-    ) -> Thermo {
+    pub fn get_triloop(&self, b0: usize, b1: usize, b2: usize, b3: usize, b4: usize) -> Thermo {
         self.triloop_array[triloop_index(b0, b1, b2, b3, b4)]
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn get_tetraloop_fast(
+    pub fn get_tetraloop(
         &self,
         b0: usize,
         b1: usize,

@@ -120,12 +120,12 @@ impl<'a> Dimer<'a> {
     fn fill_stack(&mut self, i: usize, j: usize) -> Result<()> {
         if is_base_pair_num(&self.seq1_num[i - 1], &self.seq2_num[j - 1]) {
             let mut stack = self.mat.get(i - 1, j - 1)?;
-            stack.add_finite(Some(self.params.get_stack_fast(
+            stack.add_finite(self.params.get_stack(
                 self.seq1_num[i - 1],
                 self.seq1_num[i],
                 self.seq2_num[j - 1],
                 self.seq2_num[j],
-            )));
+            ));
             self.mat.set(i, j, stack)?;
             self.traceback.set(i, j, (i as i8 - 1, j as i8 - 1))?;
         }

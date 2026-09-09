@@ -86,15 +86,15 @@ impl<'a> ThermoCalc<'a> {
 
         if loop_size_1 == 0 || loop_size_2 == 0 {
             let mut thermo = Thermo::new();
-            thermo.add_finite(self.params.get_bulge(loop_size as usize));
+            thermo.add_finite_option(self.params.get_bulge(loop_size as usize));
 
             if loop_size_1 == 1 || loop_size_2 == 1 {
-                thermo.add_finite(Some(self.params.get_stack_fast(
+                thermo.add_finite(self.params.get_stack(
                     seq1_num[i as usize],
                     seq1_num[ii as usize],
                     seq2_num[j as usize],
                     seq2_num[jj as usize],
-                )));
+                ));
             } else {
                 thermo += ThermoParams::at_penalty_num(seq1_num[i as usize], seq2_num[j as usize])
                     + ThermoParams::at_penalty_num(seq1_num[ii as usize], seq2_num[jj as usize]);
@@ -104,18 +104,18 @@ impl<'a> ThermoCalc<'a> {
 
         if loop_size_1 == 1 && loop_size_2 == 1 {
             let mut thermo = Thermo::new();
-            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+            thermo.add_finite(self.params.get_stack_mm(
                 seq1_num[i as usize],
                 seq1_num[i as usize + 1],
                 seq2_num[j as usize],
                 seq2_num[j as usize + 1],
-            )));
-            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+            ));
+            thermo.add_finite(self.params.get_stack_mm(
                 seq2_num[jj as usize],
                 seq2_num[jj as usize - 1],
                 seq1_num[ii as usize],
                 seq1_num[ii as usize - 1],
-            )));
+            ));
             return Ok(thermo);
         }
 
@@ -123,19 +123,19 @@ impl<'a> ThermoCalc<'a> {
             && !is_base_pair_num(&seq1_num[i as usize + 1], &seq2_num[j as usize + 1])
         {
             let mut thermo = Thermo::new();
-            thermo.add_finite(self.params.get_internal(loop_size as usize));
-            thermo.add_finite(Some(self.params.get_tstack_fast(
+            thermo.add_finite_option(self.params.get_internal(loop_size as usize));
+            thermo.add_finite(self.params.get_tstack(
                 seq1_num[i as usize],
                 seq1_num[i as usize + 1],
                 seq2_num[j as usize],
                 seq2_num[j as usize + 1],
-            )));
-            thermo.add_finite(Some(self.params.get_tstack_fast(
+            ));
+            thermo.add_finite(self.params.get_tstack(
                 seq2_num[jj as usize],
                 seq2_num[jj as usize - 1],
                 seq1_num[ii as usize],
                 seq1_num[ii as usize - 1],
-            )));
+            ));
 
             let t =
                 ThermoParams::internal_loop((loop_size_1 - loop_size_2).unsigned_abs() as usize);
@@ -154,7 +154,7 @@ impl<'a> ThermoCalc<'a> {
     /// This is calculated by adding the AT penalty to the terminal stack look up values.
     fn get_terminal_stack(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Result<Thermo> {
         let mut thermo = ThermoParams::at_penalty_num(b10, b20);
-        thermo.add_finite(Some(self.params.get_tstack_fast(b10, b11, b20, b21)));
+        thermo.add_finite(self.params.get_tstack(b10, b11, b20, b21));
         Ok(thermo)
     }
 
@@ -172,16 +172,16 @@ impl<'a> ThermoCalc<'a> {
     /// where b10 b11 is oriented as 5' --> 3' and b20 b21 is oriented as 3' <-- 5'
     fn get_dangle(&self, b10: usize, b11: usize, b20: usize, b21: usize) -> Result<Thermo> {
         let mut thermo = ThermoParams::at_penalty_num(b10, b20);
-        let dangle_3 = self.params.get_dangle3_fast(b10, b11, b20);
-        let dangle_5 = self.params.get_dangle5_fast(b10, b20, b21);
+        let dangle_3 = self.params.get_dangle3(b10, b11, b20);
+        let dangle_5 = self.params.get_dangle5(b10, b20, b21);
 
         if b21 == N_NUM {
-            thermo.add_finite(Some(dangle_3));
+            thermo.add_finite(dangle_3);
         } else if b11 == N_NUM {
-            thermo.add_finite(Some(dangle_5));
+            thermo.add_finite(dangle_5);
         } else {
-            thermo.add_finite(Some(dangle_3));
-            thermo.add_finite(Some(dangle_5));
+            thermo.add_finite(dangle_3);
+            thermo.add_finite(dangle_5);
         }
 
         Ok(thermo)
