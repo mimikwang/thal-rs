@@ -64,12 +64,16 @@ impl Thermo {
         self.dg_with_temp(310.15)
     }
 
+    pub fn add_finite(&mut self, rhs: Self) {
+        if f64::is_finite(rhs.dh) {
+            *self += rhs;
+        }
+    }
+
     /// Add if the rhs has finite enthalpy
-    pub fn add_finite(&mut self, rhs: Option<Self>) {
-        if let Some(t) = rhs
-            && f64::is_finite(t.dh)
-        {
-            *self += t;
+    pub fn add_finite_option(&mut self, rhs: Option<Self>) {
+        if let Some(t) = rhs {
+            self.add_finite(t);
         }
     }
 }

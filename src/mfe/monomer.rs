@@ -14,7 +14,6 @@ const MAX_HAIRPIN_LOOP: usize = 30;
 pub struct Monomer<'a> {
     mat: Matrix<Thermo>,
     traceback: Matrix<(i8, i8)>,
-    seq: Vec<u8>,
     seq_num: Vec<usize>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
@@ -32,7 +31,6 @@ impl<'a> Monomer<'a> {
         Ok(Self {
             mat,
             traceback: Self::init_traceback(seq.len()),
-            seq,
             seq_num,
             thermo_calc: ThermoCalc::new(params),
             params,
@@ -46,7 +44,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn find_best(&self) -> Result<Thermo> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
         let mut thermo = Thermo::with_inf();
 
         for i in 1..=oligo_len {
@@ -64,7 +62,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn fill(&mut self) -> Result<()> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
 
         for j in 2..=oligo_len {
             if j < MIN_HAIRPIN_LOOP + 2 {
@@ -86,12 +84,12 @@ impl<'a> Monomer<'a> {
 
     fn fill_stack(&mut self, i: usize, j: usize) -> Result<()> {
         let mut stack = self.mat.get(i + 1, j - 1)?;
-        stack.add_finite(Some(self.params.get_stack_fast(
+        stack.add_finite(self.params.get_stack(
             self.seq_num[i],
             self.seq_num[i + 1],
             self.seq_num[j],
             self.seq_num[j - 1],
-        )));
+        ));
 
         if stack.dg() < self.mat.get(i, j)?.dg() {
             self.mat.set(i, j, stack)?;
@@ -102,7 +100,7 @@ impl<'a> Monomer<'a> {
     }
 
     fn fill_loop(&mut self, i: usize, j: usize) -> Result<()> {
-        let oligo_len = self.seq.len() - 2;
+        let oligo_len = self.seq_num.len() - 2;
         let mut d = j as i64 - i as i64 - 3;
         let lower_bound =
             (MIN_HAIRPIN_LOOP as i64 + 1).max(j as i64 - i as i64 - 2 - self.max_loop as i64);
@@ -140,50 +138,50 @@ impl<'a> Monomer<'a> {
 
         if loop_size_1 == 0 || loop_size_2 == 0 {
             thermo = Thermo::new();
-            thermo.add_finite(self.params.get_bulge(loop_size as usize));
+            thermo.add_finite_option(self.params.get_bulge(loop_size as usize));
 
             if loop_size_1 == 1 || loop_size_2 == 1 {
-                thermo.add_finite(Some(self.params.get_stack_fast(
+                thermo.add_finite(self.params.get_stack(
                     self.seq_num[i],
                     self.seq_num[ii],
                     self.seq_num[j],
                     self.seq_num[jj],
-                )));
+                ));
             } else {
                 thermo += ThermoParams::at_penalty_num(self.seq_num[i], self.seq_num[j])
                     + ThermoParams::at_penalty_num(self.seq_num[ii], self.seq_num[jj]);
             }
         } else if loop_size_1 == 1 && loop_size_2 == 1 {
             thermo = Thermo::new();
-            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+            thermo.add_finite(self.params.get_stack_mm(
                 self.seq_num[i],
                 self.seq_num[i + 1],
                 self.seq_num[j],
                 self.seq_num[j - 1],
-            )));
-            thermo.add_finite(Some(self.params.get_stack_mm_fast(
+            ));
+            thermo.add_finite(self.params.get_stack_mm(
                 self.seq_num[jj],
                 self.seq_num[jj + 1],
                 self.seq_num[ii],
                 self.seq_num[ii - 1],
-            )));
+            ));
         } else if !is_base_pair_num(&self.seq_num[ii - 1], &self.seq_num[jj + 1])
             && !is_base_pair_num(&self.seq_num[i + 1], &self.seq_num[j - 1])
         {
             thermo = Thermo::new();
-            thermo.add_finite(self.params.get_internal(loop_size as usize));
-            thermo.add_finite(Some(self.params.get_tstack_fast(
+            thermo.add_finite_option(self.params.get_internal(loop_size as usize));
+            thermo.add_finite(self.params.get_tstack(
                 self.seq_num[i],
                 self.seq_num[i + 1],
                 self.seq_num[j],
                 self.seq_num[j - 1],
-            )));
-            thermo.add_finite(Some(self.params.get_tstack_fast(
+            ));
+            thermo.add_finite(self.params.get_tstack(
                 self.seq_num[jj],
                 self.seq_num[jj + 1],
                 self.seq_num[ii],
                 self.seq_num[ii - 1],
-            )));
+            ));
 
             let asym =
                 ThermoParams::internal_loop((loop_size_1 - loop_size_2).unsigned_abs() as usize);
@@ -232,7 +230,7 @@ impl<'a> Monomer<'a> {
             return Ok(thermo);
         }
 
-        let seq_len = self.seq.len();
+        let seq_len = self.seq_num.len();
         if i <= seq_len && seq_len < j {
             return Ok(thermo);
         } else if i > seq_len {
@@ -242,37 +240,37 @@ impl<'a> Monomer<'a> {
 
         thermo = Thermo::new();
         if loop_size <= MAX_HAIRPIN_LOOP {
-            thermo.add_finite(self.params.get_hairpin(loop_size - 1));
+            thermo.add_finite_option(self.params.get_hairpin(loop_size - 1));
         } else {
-            thermo.add_finite(self.params.get_hairpin(29));
+            thermo.add_finite_option(self.params.get_hairpin(29));
         }
 
         if loop_size > MIN_HAIRPIN_LOOP {
-            thermo.add_finite(Some(self.params.get_tstack_fast(
+            thermo.add_finite(self.params.get_tstack(
                 self.seq_num[i],
                 self.seq_num[i + 1],
                 self.seq_num[j],
                 self.seq_num[j - 1],
-            )));
+            ));
             if loop_size == 4 {
-                thermo.add_finite(Some(self.params.get_tetraloop_fast(
+                thermo.add_finite(self.params.get_tetraloop(
                     self.seq_num[i],
                     self.seq_num[i + 1],
                     self.seq_num[i + 2],
                     self.seq_num[i + 3],
                     self.seq_num[i + 4],
                     self.seq_num[i + 5],
-                )))
+                ));
             }
         } else if loop_size == MIN_HAIRPIN_LOOP {
             thermo += ThermoParams::at_penalty_num(self.seq_num[i], self.seq_num[j]);
-            thermo.add_finite(Some(self.params.get_triloop_fast(
+            thermo.add_finite(self.params.get_triloop(
                 self.seq_num[i],
                 self.seq_num[i + 1],
                 self.seq_num[i + 2],
                 self.seq_num[i + 3],
                 self.seq_num[i + 4],
-            )));
+            ));
         }
 
         let thermo_current = self.mat.get(i, j)?;
