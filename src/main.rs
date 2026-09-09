@@ -26,7 +26,7 @@ fn main() -> Result<()> {
         let seq1 = &args[2];
         let seq2 = &args[3];
 
-        let params = ThermoParams::with_file_path("thermo")?;
+        let params = ThermoParams::with_defaults()?;
         let mut mfe = Dimer::new(seq1.as_bytes(), seq2.as_bytes(), &params)?;
         let res = mfe.calculate()?;
         println!("dg={:?} dh={:?} ds={:?}", res.dg(), res.dh, res.ds);
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         }
 
         let seq = &args[2];
-        let params = ThermoParams::with_file_path("thermo")?;
+        let params = ThermoParams::with_defaults()?;
         let mut mfe = Monomer::new(seq.as_bytes(), &params)?;
         let res = mfe.calculate()?;
         println!("dg={:?} dh={:?} ds={:?}", res.dg(), res.dh, res.ds);

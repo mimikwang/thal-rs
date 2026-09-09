@@ -1,9 +1,5 @@
 use core::f64;
-use std::{
-    collections::HashMap,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::{errors::Result, thermo::Thermo};
 
@@ -34,10 +30,32 @@ macro_rules! data_fn {
                 return Err("paths not found");
             }
 
-            let mut output = HashMap::new();
-            read_data(&mut output, dh_path, true)?;
-            read_data(&mut output, ds_path, false)?;
+            let dh_data = fs::read_to_string(dh_path).map_err(|_| "error reading file")?;
+            let ds_data = fs::read_to_string(ds_path).map_err(|_| "error reading file")?;
 
+            let mut output = HashMap::new();
+            read_data(&mut output, &dh_data, true)?;
+            read_data(&mut output, &ds_data, false)?;
+
+            Ok(output)
+        }
+    };
+}
+
+macro_rules! default_data_fn {
+    ($name:ident, $file_ds:literal, $file_dh:literal) => {
+        pub fn $name() -> Result<HashMap<String, Thermo>> {
+            let mut output = HashMap::new();
+            read_data(
+                &mut output,
+                include_str!(concat!("../../thermo/", $file_dh)),
+                true,
+            )?;
+            read_data(
+                &mut output,
+                include_str!(concat!("../../thermo/", $file_ds)),
+                false,
+            )?;
             Ok(output)
         }
     };
@@ -50,6 +68,13 @@ data_fn!(load_dangle, DANGLE_DS, DANGLE_DH);
 data_fn!(load_triloop, TRILOOP_DS, TRILOOP_DH);
 data_fn!(load_tetraloop, TETRALOOP_DS, TETRALOOP_DH);
 
+default_data_fn!(default_stack, "stack.ds", "stack.dh");
+default_data_fn!(default_stack_mm, "stackmm.ds", "stackmm.dh");
+default_data_fn!(default_tstack, "tstack.ds", "tstack.dh");
+default_data_fn!(default_dangle, "dangle.ds", "dangle.dh");
+default_data_fn!(default_triloop, "triloop.ds", "triloop.dh");
+default_data_fn!(default_tetraloop, "tetraloop.ds", "tetraloop.dh");
+
 pub fn load_loops(file_path: &str) -> Result<Loops> {
     // Check to make sure paths exist
     let dh_path = Path::new(file_path).join(LOOPS_DH);
@@ -59,11 +84,20 @@ pub fn load_loops(file_path: &str) -> Result<Loops> {
         return Err("paths not found");
     }
 
-    // Load files
-    let mut loops = Loops::default();
-    read_loop_data(&mut loops, dh_path, true)?;
-    read_loop_data(&mut loops, ds_path, false)?;
+    let dh_data = fs::read_to_string(dh_path).map_err(|_| "error reading file")?;
+    let ds_data = fs::read_to_string(ds_path).map_err(|_| "error reading file")?;
 
+    let mut loops = Loops::default();
+    read_loop_data(&mut loops, &dh_data, true)?;
+    read_loop_data(&mut loops, &ds_data, false)?;
+
+    Ok(loops)
+}
+
+pub fn default_loops() -> Result<Loops> {
+    let mut loops = Loops::default();
+    read_loop_data(&mut loops, include_str!("../../thermo/loops.dh"), true)?;
+    read_loop_data(&mut loops, include_str!("../../thermo/loops.ds"), false)?;
     Ok(loops)
 }
 
@@ -75,8 +109,7 @@ fn parse_line(line: &str) -> Result<(String, f64)> {
     Ok((split[0].to_owned(), parse_value(split[1])?))
 }
 
-fn read_data(output: &mut HashMap<String, Thermo>, path: PathBuf, is_enthalpy: bool) -> Result<()> {
-    let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
+fn read_data(output: &mut HashMap<String, Thermo>, data: &str, is_enthalpy: bool) -> Result<()> {
     for val in data.split("\n") {
         // Skip comments and empty lines
         if val.starts_with(COMMENT_PREFIX) || val.is_empty() {
@@ -128,8 +161,7 @@ fn parse_loop_line(line: &str) -> Result<Loop> {
     })
 }
 
-fn read_loop_data(output: &mut Loops, path: PathBuf, is_enthalpy: bool) -> Result<()> {
-    let data = fs::read_to_string(path).map_err(|_| "error reading file")?;
+fn read_loop_data(output: &mut Loops, data: &str, is_enthalpy: bool) -> Result<()> {
     let mut loop_size = 0;
     for val in data.split("\n") {
         // Skip comments and empty lines
@@ -163,6 +195,8 @@ fn parse_value(val: &str) -> Result<f64> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
 
     fn get_path() -> String {
