@@ -2,7 +2,7 @@ use crate::{
     errors::Result,
     matrix::Matrix,
     mfe::{calc::ThermoCalc, common},
-    seq::is_base_pair,
+    seq::{is_base_pair_num, seq_to_num},
     thermo::{Thermo, params::ThermoParams},
 };
 
@@ -15,6 +15,7 @@ pub struct Monomer<'a> {
     mat: Matrix<Thermo>,
     traceback: Matrix<(i8, i8)>,
     seq: Vec<u8>,
+    seq_num: Vec<u8>,
     thermo_calc: ThermoCalc<'a>,
     params: &'a ThermoParams,
     max_loop: usize,
@@ -24,13 +25,15 @@ impl<'a> Monomer<'a> {
     pub fn new(seq: &[u8], params: &'a ThermoParams) -> Result<Self> {
         let mut seq = seq.to_vec();
         common::pad_seq(&mut seq);
+        let seq_num = seq_to_num(&seq);
 
-        let mat = Self::init_matrix(&seq)?;
+        let mat = Self::init_matrix(&seq_num)?;
 
         Ok(Self {
             mat,
             traceback: Self::init_traceback(seq.len()),
             seq,
+            seq_num,
             thermo_calc: ThermoCalc::new(params),
             params,
             max_loop: 30,
@@ -48,7 +51,7 @@ impl<'a> Monomer<'a> {
 
         for i in 1..=oligo_len {
             for j in 1..=oligo_len {
-                if is_base_pair(&self.seq[i], &self.seq[j]) {
+                if is_base_pair_num(&self.seq_num[i], &self.seq_num[j]) {
                     let current = self.mat.get(i, j)?;
                     if current.dg() < thermo.dg() {
                         thermo = current;
@@ -68,7 +71,7 @@ impl<'a> Monomer<'a> {
                 continue;
             }
             for i in (1..=(j - MIN_HAIRPIN_LOOP - 1)).rev() {
-                if !is_base_pair(&self.seq[i], &self.seq[j]) {
+                if !is_base_pair_num(&self.seq_num[i], &self.seq_num[j]) {
                     continue;
                 }
 
@@ -107,7 +110,7 @@ impl<'a> Monomer<'a> {
             let mut ii = i + 1;
             while (ii as i64) < (j as i64 - d) && ii <= oligo_len {
                 let jj = ii + d_usize;
-                if is_base_pair(&self.seq[ii], &self.seq[jj]) {
+                if is_base_pair_num(&self.seq_num[ii], &self.seq_num[jj]) {
                     let internal =
                         self.mat.get(ii, jj)? + self.optimal_internal_monomer(i, j, ii, jj)?;
 
@@ -156,8 +159,8 @@ impl<'a> Monomer<'a> {
                 &[self.seq[jj], self.seq[jj + 1]],
                 &[self.seq[ii], self.seq[ii - 1]],
             )?);
-        } else if !is_base_pair(&self.seq[ii - 1], &self.seq[jj + 1])
-            && !is_base_pair(&self.seq[i + 1], &self.seq[j - 1])
+        } else if !is_base_pair_num(&self.seq_num[ii - 1], &self.seq_num[jj + 1])
+            && !is_base_pair_num(&self.seq_num[i + 1], &self.seq_num[j - 1])
         {
             thermo = Thermo::new();
             thermo.add_finite(self.params.get_internal(loop_size as usize));
@@ -186,12 +189,12 @@ impl<'a> Monomer<'a> {
         Ok(())
     }
 
-    fn init_matrix(seq: &[u8]) -> Result<Matrix<Thermo>> {
-        let mut mat = Matrix::new(seq.len(), seq.len());
-        for i in 1..seq.len() {
-            for j in 1..seq.len() {
+    fn init_matrix(seq_num: &[u8]) -> Result<Matrix<Thermo>> {
+        let mut mat = Matrix::new(seq_num.len(), seq_num.len());
+        for i in 1..seq_num.len() {
+            for j in 1..seq_num.len() {
                 if (j as i8 - i as i8) < (MIN_HAIRPIN_LOOP as i8 + 1)
-                    || !is_base_pair(&seq[i], &seq[j])
+                    || !is_base_pair_num(&seq_num[i], &seq_num[j])
                 {
                     mat.set(i, j, Thermo::with_inf())?;
                 } else {
