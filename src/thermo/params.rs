@@ -4,9 +4,6 @@ use crate::{
     thermo::Thermo,
 };
 
-// Generated at compile time by `build.rs` from `stack.dh` / `stack.ds` (see `write_stack`).
-// Provides `STACK_ARRAY: [Thermo; 625]`, indexed the same way as `stack_array` below via
-// `quad_index`. Not wired into `ThermoParams` yet — see `test_generated_stack_array_matches_runtime`.
 include!(concat!(env!("OUT_DIR"), "/gen_params.rs"));
 
 #[derive(Debug)]

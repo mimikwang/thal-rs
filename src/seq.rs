@@ -28,19 +28,6 @@ const BASE_PAIR_LUT: [[bool; 5]; 5] = {
     table
 };
 
-/// Check to see if two bases are WC pairs
-pub fn is_base_pair(b1: &u8, b2: &u8) -> bool {
-    if (b1 == &A && b2 == &T) || (b1 == &T && b2 == &A) {
-        return true;
-    }
-
-    if (b1 == &C && b2 == &G) || (b1 == &G && b2 == &C) {
-        return true;
-    }
-
-    false
-}
-
 /// Convert bases to number where
 ///
 /// A --> 0
@@ -66,16 +53,6 @@ pub fn is_base_pair_num(b1: &usize, b2: &usize) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_is_base_pair() {
-        assert!(is_base_pair(&b'T', &b'A'));
-        assert!(is_base_pair(&b'A', &b'T'));
-        assert!(is_base_pair(&b'C', &b'G'));
-        assert!(is_base_pair(&b'G', &b'C'));
-        assert!(!is_base_pair(&b'T', &b'T'));
-        assert!(!is_base_pair(&b'G', &b'T'));
-    }
 
     #[test]
     fn test_seq_to_num() {
